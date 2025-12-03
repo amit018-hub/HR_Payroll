@@ -77,14 +77,14 @@ function initAttendanceTable() {
                     return d || '-';
                 }
             },
-            {
-                data: 'isWeekend',
-                title: 'Weekend',
-                render: function (d) {
-                    return d === 'Y' || d === true ? 'Yes' : 'No';
-                },
-                className: 'text-center'
-            },
+            //{
+            //    data: 'isWeekend',
+            //    title: 'Weekend',
+            //    render: function (d) {
+            //        return d === 'Y' || d === true ? 'Yes' : 'No';
+            //    },
+            //    className: 'text-center'
+            //},
             {
                 data: 'shiftName',
                 title: 'Shift',
@@ -120,10 +120,10 @@ function initAttendanceTable() {
                 data: 'status',
                 title: 'Status',
                 render: function (d, type, row) {
-                    let color = 'gray';
+                    let color = 'blue';
                     if (d === 'Present') color = 'green';
                     else if (d === 'Absent') color = 'red';
-                    else if (d === 'Weekend') color = 'blue';
+                    else if (d === 'Weekend') color = 'gray';
 
                     let title = `Shift: ${row.shiftName || '-'}\nRemarks: ${row.remarks || '-'}`;
 

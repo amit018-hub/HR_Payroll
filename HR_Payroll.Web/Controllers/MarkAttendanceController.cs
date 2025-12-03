@@ -271,6 +271,7 @@ namespace HR_Payroll.Web.Controllers
             return View();
         }
 
+        [HttpPost]
         public async Task<IActionResult> GetAttendanceCalendar(DateTime? fromDate, DateTime? toDate)
         {
             try
