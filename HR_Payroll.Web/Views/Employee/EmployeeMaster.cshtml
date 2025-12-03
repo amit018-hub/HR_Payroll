@@ -1,0 +1,235 @@
+﻿@{
+    ViewData["Title"] = "EmployeeMaster";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Employee Details Wizard -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Employee Details</h4>
+                <p class="text-muted mb-0">Fill employee information step-by-step.</p>
+            </div>
+
+            <div class="card-body">
+                <form id="employeeWizard" method="post">
+                    <!-- Wizard Navigation -->
+                    <nav>
+                        <div class="nav nav-tabs" id="nav-tab">
+                            <a class="nav-link active" id="step1-tab" data-bs-toggle="tab" href="#step1">Basic Info</a>
+                            <a class="nav-link" id="step2-tab" data-bs-toggle="tab" href="#step2">Payroll Info</a>
+                            <a class="nav-link" id="step3-tab" data-bs-toggle="tab" href="#step3">Bank Details</a>
+                            <a class="nav-link" id="step4-tab" data-bs-toggle="tab" href="#step4">Salary Breakup</a>
+                        </div>
+                    </nav>
+
+                    <div class="tab-content" id="nav-tabContent">
+                        <!-- STEP 1: Employee Details & Basic Info -->
+                        <div class="tab-pane fade show active" id="step1">
+                            <h4 class="card-title mt-3 mb-2">Employee Details</h4>
+                            <input type="hidden" id="employeeId" />
+                            <!-- Employee core details -->
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Employee Code</label>
+                                    <input type="text" class="form-control" placeholder="EMP001" id="empcode" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" class="form-control" placeholder="First Name" id="firstname" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" placeholder="Last Name" id="lastname" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Department</label>
+                                    <select class="form-select" id="department" data-required="true">
+                                        <option value="">Select</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Designation</label>
+                                    <select class="form-select" id="subDepartment" data-required="true">
+                                        <option value="">Select</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">State</label>
+                                    <input type="text" class="form-control" placeholder="Odisha" id="state" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Joining Date</label>
+                                    <input type="date" class="form-control" id="joiningdate" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Reporting To</label>
+                                    <input type="text" class="form-control" placeholder="Reporting Manager" id="reporting" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Source of Hire</label>
+                                    <select class="form-select" id="sourceofhire" data-required="true">
+                                        <option value="Direct">Direct</option>
+                                        <option value="Referral">Referral</option>
+                                        <option value="Consultancy">Consultancy</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Interviewer</label>
+                                    <input type="text" class="form-control" placeholder="Name of Interviewer" id="interviewer">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Attendance Rules</label>
+                                    <input type="text" class="form-control" placeholder="Standard Rules"id="attendance">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Employment Status</label>
+                                    <select class="form-select" id="employmentstatus" data-required="true">
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <h5 class="card-title mb-2">Personal & ID Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Marital Status</label>
+                                    <select class="form-select" id="maritalstatus" data-required="true">
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Aadhar No</label>
+                                    <input type="text" class="form-control" placeholder="Aadhar Number" id="aadhar" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">PAN No</label>
+                                    <input type="text" class="form-control" placeholder="PAN Number" id="pan" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">PF No</label>
+                                    <input type="text" class="form-control" placeholder="PF Number" id="pf" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">UAN No</label>
+                                    <input type="text" class="form-control" placeholder="UAN Number" id="uan" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">ESI No</label>
+                                    <input type="text" class="form-control" placeholder="ESI Number" id="esi" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Profile Picture</label>
+                                    <input type="file" class="form-control" id="profile">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Notice Period (Days)</label>
+                                    <input type="number" class="form-control" placeholder="Notice Period" id="noticeperiod">
+                                </div>
+
+                            </div>
+
+                            <div class="mt-3 text-end">
+                                <button type="button" class="btn btn-primary" id="step1Next">Save & Next</button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 2: Payroll Info -->
+                        <div class="tab-pane fade" id="step2">
+                            <h4 class="card-title mt-3 mb-2">Payroll & Salary Details</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Salary Per Month</label>
+                                    <input type="number" class="form-control" placeholder="Enter Salary Per Month" id="salaryPerMonth" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Salary Per Year</label>
+                                    <input type="number" class="form-control" placeholder="Enter Salary Per Year" id="salaryPerYear" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Recovery Mode</label>
+                                    <select class="form-select" id="recoverymode">
+                                        <option value="None">No Recovery</option>
+                                        <option value="Full Recovery">Full Recovery</option>
+                                        <option value="Partial Recovery">Partial Recovery</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Installment Amount</label>
+                                    <input type="number" class="form-control" placeholder="Installment Amount" id="installment">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Recovery Cycle</label>
+                                    <select class="form-select" id="recoverycycle">
+                                        <option value="None">None</option>
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">User ID in Biometric Device</label>
+                                    <input type="text" class="form-control" placeholder="Biometric Device ID" id="biometricdevice">
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-secondary float-start" id="step2Prev">Previous</button>
+                                <button type="button" class="btn btn-primary float-end" id="step2Next">Save & Next</button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 3: Bank Details -->
+                        <div class="tab-pane fade" id="step3">
+                            <h4 class="card-title mt-3 mb-2">Bank Details</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Beneficiary Name</label>
+                                    <input type="text" class="form-control" placeholder="Beneficiary Name" id="beneficiary" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Bank Name</label>
+                                    <input type="text" class="form-control" placeholder="Bank Name" id="bankname" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Account Number</label>
+                                    <input type="text" class="form-control" placeholder="Account Number" id="accountno" data-required="true">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">IFSC Code</label>
+                                    <input type="text" class="form-control" placeholder="IFSC Code" id="ifsc" data-required="true">
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" id="step3Prev" class="btn btn-secondary float-start">Previous</button>
+                                <button type="button" id="step3Next" class="btn btn-primary float-end">Save & Next</button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 4: Salary Breakup -->
+                        <div class="tab-pane fade" id="step4">
+                            <h4 class="card-title mt-3 mb-2">Salary Breakup</h4>
+                            <div class="table-responsive">
+                                <div id="salaryBreakupTable"></div>
+                                <div class="mt-2 d-flex justify-content-end">
+                                    <div class="me-3"><strong>Selected Total:</strong> <span id="selectedTotal">0.00</span></div>
+                                    <div><strong>Remaining:</strong> <span id="remainingAmount">0.00</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" id="step4Prev" class="btn btn-secondary float-start">Previous</button>
+                                <button type="button" id="step4Finish" class="btn btn-danger float-end">Finish</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div><!-- end card-body -->
+        </div><!-- end card -->
+    </div>
+</div>
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/employee/employee.js"></script>

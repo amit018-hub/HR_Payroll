@@ -1,0 +1,170 @@
+﻿@{
+    ViewData["Title"] = "Assign Employee";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .dropdown {
+        position: relative;
+    }
+
+    .dropdown-list {
+        display: none;
+        position: absolute;
+        z-index: 1000;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .dropdown.open .dropdown-list {
+        display: block;
+    }
+
+    .dropdown-item {
+        display: block;
+        padding: 6px 10px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item input {
+            margin-right: 8px;
+        }
+
+</style>
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+                    <li class="breadcrumb-item"><a href="#">Master</a></li>
+                    <li class="breadcrumb-item active">Department</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Assign Employee</h4>
+        </div>
+        <!--end page-title-box-->
+    </div>
+    <!--end col-->
+</div>
+<!-- end page title end breadcrumb -->
+<div class="row">
+    <div class="card">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Department</label>
+                    <select id="dept" class="form-select">
+                        <option value="">-- Select Department --</option>                        
+                    </select>
+                </div>
+
+                <!-- Branch -->
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Sub Department</label>
+                    <select id="subDept" class="form-select">
+                        <option value="">-- Select Sub Department --</option>                      
+                    </select>
+                </div>
+
+                <!-- Manager -->
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Manager</label>
+                    <select id="managerSelect" class="form-select">
+                        <option value="">-- Select Manager --</option>
+                    </select>
+                </div>
+
+                <!-- Team Lead -->
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Team Lead</label>
+                    <select id="teamleadSelect" class="form-select">
+                        <option value="">-- Select Team Lead --</option>
+                    </select>
+                </div>
+              
+            </div>
+            <div class="row mt-2">
+                <!-- Employee with checkboxes -->
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Employee</label>
+                    <div class="dropdown w-100" id="employeeDropdown">
+                        <button type="button" id="empDropdownBtn" class="form-select d-flex justify-content-between align-items-center">
+                            <span id="empSelected">-- Select Employee --</span>
+                        </button>
+                        <div class="dropdown-list" id="empList">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-dark">Remarks</label>
+                    <textarea type="text" id="remarks" class="form-control" placeholder="Enter remarks"></textarea>                   
+                </div>
+                <div class="col-md-6 text-end" style="margin-top: 2.1rem;">
+                    <button id="btnCancel" class="btn btn-outline-danger btn-sm rounded me-2" onclick="window.location.reload();">
+                        Cancel
+                    </button>
+                    <button id="btnAssign" class="btn btn-outline-primary btn-sm rounded">
+                        Assign
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Assign Employee List</h5> 
+               
+                <div>
+                    <a  asp-action="OrgFlowChart" asp-controller="Assign" title="ORG. Chart">
+                        <svg width="28" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                            <g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M7.5 2.5h6v5h-6z" /><path d="M12.5 13.5h6v5h-6z" /><path d="M2.5 13.5h6v5h-6z" /><path d="M5.498 13.5v-3h10v3" />
+                                <path d="M10.5 10.5v-3" />
+                            </g>
+                        </svg>
+                        </a>
+                    <button type="button" id="exportCsv" class="btn btn-sm btn-outline-success csv">Export CSV</button>
+                    <button type="button" id="exportPdf" class="btn btn-sm btn-outline-danger pdf">Export PDF</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle table-hover" id="assignEmpTable">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Sl. No.</th>
+                                <th>Department</th>
+                                <th>Sub Department</th>
+                                <th>Employee Name</th>
+                                <th>Team Lead</th>
+                                <th>Manager</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Javascript  -->
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/assign/assignemployee.js"></script>

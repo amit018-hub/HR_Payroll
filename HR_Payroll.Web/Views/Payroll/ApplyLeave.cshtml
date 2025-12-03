@@ -1,0 +1,351 @@
+﻿@{
+    ViewData["Title"] = "ApplyLeave";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    /* -----------------------------
+       BALANCE CARDS
+    ----------------------------- */
+    .leave-balance-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    .leave-item {
+        background: #e9eaeb;
+        border-radius: 12px;
+        padding: 18px 12px;
+        text-align: center;
+        border: 1px solid #eceff5;
+        transition: 0.2s ease;
+    }
+
+        .leave-item:hover {
+            background: #eef3ff;
+            transform: translateY(-2px);
+        }
+
+        .leave-item .label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .leave-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+    /* -----------------------------
+       TABS
+    ----------------------------- */
+    .nav-tabs .nav-link {
+        border-radius: 8px 8px 0 0 !important;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+        .nav-tabs .nav-link.active {
+            background: #ffffff !important;
+            border-bottom: 2px solid #0d6efd !important;
+            color: #0d6efd !important;
+        }
+
+    /* -----------------------------
+       TABLES
+    ----------------------------- */
+    .table thead th {
+        background: #f2f4f7;
+        border-bottom: 2px solid #e1e4e8;
+        padding: 12px;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    .table tbody tr {
+        transition: 0.2s;
+    }
+
+        .table tbody tr:hover {
+            background-color: #f4f8ff;
+        }
+
+    .text-muted-center {
+        text-align: center;
+        padding: 16px;
+        font-size: 0.95rem;
+    }
+
+    /* -----------------------------
+       MODAL
+    ----------------------------- */
+    .modal-content {
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .modal-footer {
+        padding: 12px 20px;
+    }
+
+    /* Buttons hover */
+    .btn-primary:hover {
+        background-color: #0b5ed7 !important;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #e2e6ea !important;
+    }
+</style>
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+                    <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                    <li class="breadcrumb-item active">Leave</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Apply Leave</h4>
+        </div>
+        <!--end page-title-box-->
+    </div>
+    <!--end col-->
+</div>
+<!-- Leave Balances -->
+<div class="leave-balance-card p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-clipboard2-check me-2 text-primary"></i>Available Leave Balances
+        </h5>
+        <div class="float-end">
+            <button id="btnOpenApplyModal"
+                    class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#applyLeaveModal">
+                <i class="fas fa-plus-circle me-1"></i> Apply Leave
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-3 col-sm-6">
+            <div class="leave-item border-primary-subtle">
+                <div class="label">Total Leave</div>
+                <div id="totalBalance" class="value text-primary"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="leave-item border-success-subtle">
+                <div class="label">Casual Leave</div>
+                <div id="casualBalance" class="value text-success"></div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="leave-item border-danger-subtle">
+                <div class="label">Sick Leave</div>
+                <div id="sickBalance" class="value text-danger"></div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="leave-item border-secondary-subtle">
+                <div class="label">Other Leave</div>
+                <div id="otherBalance" class="value text-secondary"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Requests List -->
+<div class="card shadow-sm border-0 mt-4">
+    <div class="card-body">
+
+        <!-- ==================== TABS ==================== -->
+        <ul class="nav nav-tabs mb-3" id="leaveTabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="my-leaves-tab" data-bs-toggle="tab" href="#my-leaves">
+                    Leave Requests
+                </a>
+            </li>
+
+            <!-- Show this tab ONLY if role is Manager or Team Lead -->
+            <li class="nav-item" id="approvalTabContainer" style="display:none;">
+                <a class="nav-link" id="approve-leaves-tab" data-bs-toggle="tab" href="#approve-leaves">
+                    Pending Approvals
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- ==================== MY LEAVE REQUESTS TAB ==================== -->
+            <div class="tab-pane fade show active" id="my-leaves">
+                <h4 class="fw-bold text-dark mb-1">Leave Requests</h4>
+                <p class="text-muted small mb-3">List of leaves you have applied.</p>
+
+                <div class="table-responsive">
+                    <table id="leavesTable" class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Leave Type</th>
+                                <th>From — To</th>
+                                <th>Total Days</th>
+                                <th>Reason</th>
+                                <th>Attachment</th>
+                                <th>Applied On</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myLeavesBody">
+                            <tr><td colspan="8" class="text-muted text-center">No data available</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- ==================== APPROVAL TAB (MANAGER / TEAM LEAD) ==================== -->
+            <div class="tab-pane fade" id="approve-leaves">
+                <h4 class="fw-bold text-dark mb-1">Pending Leave Approvals</h4>
+                <p class="text-muted small mb-3">Approve or reject leave requests.</p>
+
+                <div class="table-responsive">
+                    <table id="approvalTable" class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Employee</th>
+                                <th>Leave Type</th>
+                                <th>From — To</th>
+                                <th>Total Days</th>
+                                <th>Reason</th>
+                                <th>Attachment</th>
+                                <th>Applied On</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvalBody">
+                            <tr><td colspan="9" class="text-muted text-center">No pending leaves</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Reject Remark Modal -->
+            <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Reject Leave Request</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <input type="hidden" id="rejectLeaveId" />
+
+                            <label class="form-label">Remark <span class="text-danger">*</span></label>
+                            <textarea id="rejectRemark" class="form-control" rows="3" placeholder="Enter reason for rejection..."></textarea>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button id="btnSubmitReject" class="btn btn-danger">Reject Leave</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Bootstrap Modal -->
+<div class="modal fade"
+     id="applyLeaveModal"
+     tabindex="-1"
+     aria-labelledby="applyLeaveModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="applyLeaveModalLabel">
+                    <i class="bi bi-calendar-check me-2"></i>Apply for Leave
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="applyLeaveForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="leaveType" class="form-label">Leave Type</label>
+                            <select id="leaveType" class="form-select">
+                                <option value="">Select Leave Type</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fromDate" class="form-label">From Date</label>
+                            <input type="date" id="fromDate" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="toDate" class="form-label">To Date</label>
+                            <input type="date" id="toDate" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="totalDays" class="form-label">Total Days</label>
+                            <input type="text"
+                                   id="totalDays"
+                                   class="form-control"
+                                   readonly
+                                   placeholder="Auto-calculated" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="toDate" class="form-label">Attachment (optional)</label>
+                            <input type="file" id="attfile" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="reason" class="form-label">Reason</label>
+                            <textarea id="reason"
+                                      class="form-control"
+                                      rows="2"
+                                      placeholder="Enter reason..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <span id="applyMsg" class="me-auto small text-muted"></span>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button id="btnApplyLeave" class="btn btn-primary btn-sm">
+                    Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Javascript  -->
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/leave/leave.js"></script>
