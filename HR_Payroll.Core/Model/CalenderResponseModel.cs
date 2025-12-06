@@ -13,5 +13,7 @@ namespace HR_Payroll.Core.Model
         public string? Status { get; set; }
 
         public string? Remarks { get; set; }
+
+        public string? LeaveRemarks { get; set; }
     }
 }

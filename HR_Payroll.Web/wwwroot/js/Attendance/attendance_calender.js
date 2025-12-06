@@ -3,7 +3,6 @@
     var calendarEl = document.getElementById("calendar");
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
-
         initialView: "dayGridMonth",
 
         headerToolbar: {
@@ -40,14 +39,15 @@
                         return;
                     }
 
+                    // 🔥 AUTO-BIND LAST 5 RECORDS WHEN PAGE LOADS
+                    bindLastFive(json.data);
+
                     let events = [];
 
                     json.data.forEach(x => {
-
                         let eventDate = x.attendanceDate.split("T")[0];
 
-                        // ❌ Skip FUTURE STATUS (except today)
-                        if (eventDate > today) return;
+                        if (eventDate > today) return; // Skip future dates
 
                         let bg = "#17a2b8", txt = "#fff";
 
@@ -73,29 +73,6 @@
                         });
                     });
 
-                    // 🔥 Ensure TODAY ALWAYS SHOWS STATUS (even if backend missing)
-                    let todayRecord = json.data.find(x => x.attendanceDate === today);
-
-                    if (todayRecord) {
-                        let bg =
-                            todayRecord.status === "Present" ? "#28a745" :
-                                todayRecord.status === "Absent" ? "#dc3545" :
-                                    todayRecord.status === "Weekend" ? "#6c757d" :
-                                        "#17a2b8";
-
-                        events.push({
-                            title: todayRecord.status.replace(" ", "\n"),
-                            start: todayRecord.attendanceDate,
-                            allDay: true,
-                            display: "block",
-                            backgroundColor: bg,
-                            textColor: "#fff",
-                            extendedProps: {
-                                remarks: todayRecord.leaveRemarks || todayRecord.attendanceRemarks
-                            }
-                        });
-                    }
-
                     successCallback(events);
                 },
 
@@ -110,8 +87,66 @@
             if (info.event.extendedProps.remarks) {
                 info.el.setAttribute("title", info.event.extendedProps.remarks);
             }
+        },
+
+        // 🔥 USER CLICKS ANY EVENT → UPDATE LEFT PANEL
+        eventClick: function (info) {
+
+            let status = info.event.title.replace("\n", " ");
+            let date = info.event.startStr;
+            let remarks = info.event.extendedProps.remarks || "No remarks found";
+
+            $("#attendanceDetailsBox").html(`
+                <li class="list-group-item align-items-center d-flex">
+                    <div class="media">
+                        <img src="/assets/images/small/calendar.svg"
+                            class="me-3 thumb-sm align-self-center rounded-circle" alt="">
+                        <div class="media-body align-self-center">
+                            <h6 class="mt-0 mb-1">${status}</h6>
+                            <p class="text-muted mb-0"><b>Date:</b> ${date}</p>
+                            <p class="text-muted mb-0"><b>Remarks:</b> ${remarks}</p>
+                        </div>
+                    </div>
+                </li>
+            `);
         }
     });
 
     calendar.render();
 });
+
+
+// ------------------------------------------------------
+// 🔥 FUNCTION: BIND LAST 5 RECORDS TO LEFT PANEL
+// ------------------------------------------------------
+function bindLastFive(data) {
+
+    // Sort by newest date first
+    let sorted = data.sort((a, b) => new Date(b.attendanceDate) - new Date(a.attendanceDate));
+
+    // Take last 5 recent
+    let lastFive = sorted.slice(0, 5);
+
+    let html = "";
+
+    lastFive.forEach(x => {
+        let date = x.attendanceDate.split("T")[0];
+        let remarks = x.leaveRemarks || x.attendanceRemarks || "No remarks available";
+
+        html += `
+            <li class="list-group-item align-items-center d-flex">
+                <div class="media">
+                    <img src="/assets/images/small/calendar.svg"
+                        class="me-3 thumb-sm align-self-center rounded-circle" alt="">
+                    <div class="media-body align-self-center">
+                        <h6 class="mt-0 mb-1">${x.status}</h6>
+                        <p class="text-muted mb-0"><b>Date:</b> ${date}</p>
+                        <p class="text-muted mb-0"><b>Remarks:</b> ${remarks}</p>
+                    </div>
+                </div>
+            </li>
+        `;
+    });
+
+    $("#attendanceDetailsBox").html(html);
+}
