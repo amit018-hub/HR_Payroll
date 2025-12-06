@@ -1,19 +1,24 @@
 ﻿$(function () {
 
     const steps = ["#step1", "#step2", "#step3", "#step4"];
+    showStep(0);
+
+    // track which steps were saved explicitly
+    const savedSteps = { step1: false, step2: false, step3: false };
 
     function showStep(stepIndex) {
 
-        $(".tab-pane").removeClass("show active");
+        $(".tp").removeClass("show active");
 
         $(steps[stepIndex]).addClass("show active");
 
-        $(".nav-link").each(function (idx) {
+        $(".nlink").each(function (idx) {
             $(this).toggleClass("active", idx === stepIndex);
         });
     }
     window.showStep = showStep;
 
+    // Next/Prev should only navigate. Saving is performed by per-tab Save buttons.
     $("#step1Next").on("click", () => showStep(1));
     $("#step2Prev").on("click", () => showStep(0));
     $("#step2Next").on("click", () => showStep(2));
@@ -23,6 +28,7 @@
 
     getDepartments();
 
+    // When navigating to payroll or bank via Next, ensure components get fetched for breakup preview.
     $('#step2Next, #step3Next').on('click', function () {
         fetchSalaryComponents(function () {
             let salary = parseFloat($('#salaryPerMonth').val()) || 0;
@@ -31,17 +37,6 @@
     });
 
 
-    //$('#salaryPerMonth').on('input', function () {
-    //    var perMonth = parseFloat($(this).val()) || 0;
-    //    $('#salaryPerYear').val(perMonth > 0 ? (perMonth * 12).toFixed(2) : '');
-    //    updateTotals();
-    //});
-
-    //$('#salaryPerYear').on('input', function () {
-    //    var perYear = parseFloat($(this).val()) || 0;
-    //    $('#salaryPerMonth').val(perYear > 0 ? (perYear / 12).toFixed(2) : '');
-    //    updateTotals();
-    //});
     function debounce(fn, wait) {
         let t;
         return function () {
@@ -68,6 +63,11 @@
         ensureComponentsAndRender(salary);
         updateTotals();
     }, 300));
+
+    // Clear validation error when user edits inputs/selects/textareas in steps
+    $('#step1, #step2, #step3, #step4').on('input change', 'input, select, textarea', function () {
+        clearFieldError($(this));
+    });
 });
 function ensureComponentsAndRender(salary) {
     if (salary <= 0) {
@@ -162,7 +162,7 @@ function fetchSalaryComponents(callback) {
             salaryComponents = [];
             if (callback) callback();
         }
-        
+
     });
 }
 
@@ -202,7 +202,7 @@ function renderSalaryBreakup(salary) {
                     <td class="text-center align-middle">
                         <input type="checkbox" class="form-check-input component-check" ${checked ? 'checked' : ''} />
                     </td>
-                    <td class="align-middle">${idx + 1}. ${escapeHtml(compName)}</td>
+                    <td class="">${idx + 1}. ${escapeHtml(compName)}</td>
                     <td class="align-middle" style="width:220px;">
                         <div class="input-group">
                             <input type="number" min="0" step="0.01" class="form-control component-amount text-center" value="${amount.toFixed(2)}" data-comp-id="${compId}" />
@@ -221,7 +221,7 @@ function renderSalaryBreakup(salary) {
         `;
 
     $('#salaryBreakupTable').html(`
-            <table class="table table-bordered align-middle text-center">
+            <table class="table table-bordered ">
                 <thead class="table-light">
                     <tr>
                         <th style="width:48px;">Select</th>
@@ -270,6 +270,27 @@ function showComponentError($input, message) {
     $input.addClass('is-invalid');
     const $err = $input.closest('td').find('.component-error');
     $err.text(message).show();
+}
+
+// Generic field error clear (for step inputs/selects/textareas)
+function clearFieldError($el) {
+    if (!$el || !$el.length) return;
+    $el.removeClass('is-invalid');
+    let $feedback = $el.siblings('.invalid-feedback');
+    if ($feedback.length === 0) {
+        $feedback = $el.next('.invalid-feedback');
+    }
+    if ($feedback.length > 0) {
+        $feedback.hide().text('');
+    }
+}
+
+// clear all errors in a container
+function clearAllErrors($container) {
+    if (!$container || $container.length === 0) return;
+    $container.find('input, select, textarea').each(function () {
+        clearFieldError($(this));
+    });
 }
 
 function updateTotals() {
@@ -349,8 +370,11 @@ function bindBasicInfo(saved) {
 
 function bindPayrollInfo(saved) {
     if (!saved) return;
-    $('#salaryPerMonth').val(saved.salaryPerMonth || saved.SalaryPerMonth || saved.salary || '');
-    $('#salaryPerYear').val(saved.salaryPerYear || saved.SalaryPerYear || '');
+    // Avoid overwriting user-entered values with empty server fields
+    const spm = saved.salaryPerMonth ?? saved.SalaryPerMonth ?? saved.salary;
+    if (spm !== undefined && spm !== null && spm !== '') $('#salaryPerMonth').val(spm);
+    const spy = saved.salaryPerYear ?? saved.SalaryPerYear ?? saved.salaryPerYear;
+    if (spy !== undefined && spy !== null && spy !== '') $('#salaryPerYear').val(spy);
 }
 
 function showFieldError($el, message) {
@@ -360,115 +384,17 @@ function showFieldError($el, message) {
         $feedback = $('<div class="invalid-feedback"></div>');
         $el.after($feedback);
     }
-    $feedback.text(message);
+    $feedback.text(message).show();
 }
-
-
-
-
-//function validateStep1() {
-//    const $step = $('#step1');
-//    clearAllErrors($step);
-
-//    const $firstName = $step.find('input[placeholder="First Name"]');
-//    const $department = $step.find('#department');
-//    const $joiningDate = $step.find('input[type="date"]');
-
-//    let valid = true;
-
-//    if (!$firstName.val() || !$firstName.val().trim()) {
-//        showFieldError($firstName, 'First name is required.');
-//        valid = false;
-//    }
-
-//    if (!$department.val() || $department.val() === '') {
-//        showFieldError($department, 'Department is required.');
-//        valid = false;
-//    }
-
-//    if (!$joiningDate.val() || $joiningDate.val().trim() === '') {
-//        showFieldError($joiningDate, 'Joining date is required.');
-//        valid = false;
-//    }
-
-//    return valid;
-//}
-
-//// Validate Step 2 (Payroll) - essential fields
-//function validateStep2() {
-//    const $step = $('#step2');
-//    clearAllErrors($step);
-
-//    const $salaryPerMonth = $('#salaryPerMonth');
-//    const $salaryPerYear = $('#salaryPerYear');
-
-//    let perMonth = parseFloat($salaryPerMonth.val()) || 0;
-//    let perYear = parseFloat($salaryPerYear.val()) || 0;
-//    let valid = true;
-
-//    if (perMonth <= 0 && perYear <= 0) {
-//        showFieldError($salaryPerMonth, 'Enter Salary Per Month or Salary Per Year.');
-//        showFieldError($salaryPerYear, 'Enter Salary Per Month or Salary Per Year.');
-//        valid = false;
-//    }
-
-//    return valid;
-//}
-
-//function validateStep3() {
-//    const $step = $('#step3');
-//    clearAllErrors($step);
-
-//    const $beneficiary = $step.find('input[placeholder="Beneficiary Name"]');
-//    const $accountNumber = $step.find('input[placeholder="Account Number"]');
-//    const $ifsc = $step.find('input[placeholder="IFSC Code"]');
-
-//    let valid = true;
-
-//    if (!$accountNumber.val() || !$accountNumber.val().trim()) {
-//        showFieldError($accountNumber, 'Account number is required.');
-//        valid = false;
-//    }
-
-//    if (!$ifsc.val() || !$ifsc.val().trim()) {
-//        showFieldError($ifsc, 'IFSC code is required.');
-//        valid = false;
-//    }
-
-//    if ($beneficiary.length && $beneficiary.val() && !$beneficiary.val().trim()) {
-//        showFieldError($beneficiary, 'Provide beneficiary name or remove value.');
-//        valid = false;
-//    }
-
-//    return valid;
-//}
-
-//function validateStep4() {
-//    const $table = $('#salaryBreakupTable');
-//    if ($table.find('tbody tr').length === 0) {
-//        alert('Salary breakup is empty. Enter Salary Per Month to generate breakup.');
-//        return false;
-//    }
-
-//    let total = 0;
-//    $table.find('tbody tr').each(function () {
-//        const val = parseFloat($(this).find('input').val()) || 0;
-//        total += val;
-//    });
-
-//    if (total <= 0) {
-//        alert('Salary breakup total must be greater than 0.');
-//        return false;
-//    }
-
-//    return true;
-//}
 
 function validateBySelector(selector) {
     if (!selector) return true;
     const sel = selector.startsWith('#') || selector.startsWith('.') ? selector : '.' + selector;
     const $container = $(sel);
     if ($container.length === 0) return true; // nothing to validate
+
+    // clear previous errors before validating
+    clearAllErrors($container);
 
     let valid = true;
 
@@ -527,140 +453,229 @@ function validateStep2() { return validateBySelector('#step2'); }
 function validateStep3() { return validateBySelector('#step3'); }
 function validateStep4() { return validateBySelector('#step4'); }
 
+// Save helper functions that return Promises so we can chain saves if needed
+function saveBasicInfo() {
+    return new Promise(function (resolve, reject) {
+        if (!validateStep1()) {
+            return reject('Validation failed for Step 1');
+        }
+        var fd = new FormData();
+        fd.append('EmployeeCode', $('#empcode').val());
+        fd.append('FirstName', $('#firstname').val());
+        fd.append('LastName', $('#lastname').val());
+        fd.append('DepartmentId', $('#department').val() || '');
+        fd.append('SubDepartmentId', $('#subDepartment').val() || '');
+        fd.append('State', $('#state').val() || '');
+        fd.append('JoiningDate', $('#joiningdate').val() || '');
+        fd.append('ReportingTo', $('#reporting').val() || '');
+        fd.append('SourceOfHire', $('#sourceofhire').val() || '');
+        fd.append('Interviewer', $('#interviewer').val() || '');
+        fd.append('AttendanceRules', $('#attendance').val() || '');
+        fd.append('EmploymentStatus', $('#employmentstatus').val() || '');
+        fd.append('MaritalStatus', $('#maritalstatus').val() || '');
+        fd.append('AadharNo', $('#aadhar').val() || '');
+        fd.append('PANNo', $('#pan').val() || '');
+        fd.append('PFNo', $('#pf').val() || '');
+        fd.append('UANNo', $('#uan').val() || '');
+        fd.append('ESINo', $('#esi').val() || '');
+        fd.append('NoticePeriod', $('#noticeperiod').val() || '');
 
-$('#step1Next').off('click').on('click', function () {
-    if (!validateStep1()) return;
-    var fd = new FormData();
-    fd.append('EmployeeCode', $('#empcode').val());
-    fd.append('FirstName', $('#firstname').val());
-    fd.append('LastName', $('#lastname').val());
-    fd.append('DepartmentId', $('#department').val() || '');
-    fd.append('SubDepartmentId', $('#subDepartment').val() || '');
-    fd.append('State', $('#state').val() || '');
-    fd.append('JoiningDate', $('#joiningdate').val() || '');
-    fd.append('ReportingTo', $('#reporting').val() || '');
-    fd.append('SourceOfHire', $('#sourceofhire').val() || '');
-    fd.append('Interviewer', $('#interviewer').val() || '');
-    fd.append('AttendanceRules', $('#attendance').val() || '');
-    fd.append('EmploymentStatus', $('#employmentstatus').val() || '');
-    fd.append('MaritalStatus', $('#maritalstatus').val() || '');
-    fd.append('AadharNo', $('#aadhar').val() || '');
-    fd.append('PANNo', $('#pan').val() || '');
-    fd.append('PFNo', $('#pf').val() || '');
-    fd.append('UANNo', $('#uan').val() || '');
-    fd.append('ESINo', $('#esi').val() || '');
-    fd.append('NoticePeriod', $('#noticeperiod').val() || '');
+        var fileInput = $('input[type="file"]')[0];
+        if (fileInput && fileInput.files && fileInput.files.length) {
+            fd.append('ProfilePicture', fileInput.files[0]);
+        }
 
-    var fileInput = $('input[type="file"]')[0];
-    if (fileInput && fileInput.files && fileInput.files.length) {
-        fd.append('ProfilePicture', fileInput.files[0]);
+        $.ajax({
+            url: '/Employee/SaveBasicInfo',
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                var saved = getSaved(response);
+                bindBasicInfo(saved);
+                savedSteps.step1 = true;
+                resolve(saved);
+            },
+            error: function (xhr) {
+                reject(xhr);
+            }
+        });
+    });
+}
+
+function savePayrollInfo() {
+    return new Promise(function (resolve, reject) {
+        if (!validateStep2()) {
+            return reject('Validation failed for Step 2');
+        }
+        var data = {
+            EmployeeId: $('#employeeId').val(),
+            SalaryPerMonth: parseFloat($('#salaryPerMonth').val()) || 0,
+            SalaryPerYear: parseFloat($('#salaryPerYear').val()) || 0,
+            RecoveryMode: $('#recoverymode').val(),
+            InstallmentAmount: $('#installment').val(),
+            RecoveryCycle: $('#recoverycycle').val(),
+            BiometricUserId: $('#biometricdevice').val()
+        };
+        $.ajax({
+            url: '/Employee/SavePayrollInfo',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (response) {
+                var saved = getSaved(response);
+                bindPayrollInfo(saved);
+                savedSteps.step2 = true;
+                // ensure components re-rendered after payroll save
+                fetchSalaryComponents(function () {
+                    let salary = parseFloat($('#salaryPerMonth').val()) || 0;
+                    renderSalaryBreakup(salary);
+                });
+                resolve(saved);
+            },
+            error: function (xhr) {
+                reject(xhr);
+            }
+        });
+    });
+}
+
+function saveBankInfo() {
+    return new Promise(function (resolve, reject) {
+        if (!validateStep3()) {
+            return reject('Validation failed for Step 3');
+        }
+        var data = {
+            EmployeeId: $('#employeeId').val(),
+            BeneficiaryName: $('#beneficiary').val(),
+            BankName: $('#bankname').val(),
+            AccountNumber: $('#accountno').val(),
+            IFSCCode: $('#ifsc').val()
+        };
+        $.ajax({
+            url: '/Employee/SaveBankDetails',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (response) {
+                savedSteps.step3 = true;
+                resolve(response);
+            },
+            error: function (xhr) {
+                reject(xhr);
+            }
+        });
+    });
+}
+
+// Per-tab Save button bindings
+$('#save1').off('click').on('click', function () {
+    saveBasicInfo().then(function () {
+        showStep(1); // move to step 2 after save
+    }).catch(function (err) {
+        // validation errors are already shown; keep user on current step
+        console.error('Save Step1 failed', err);
+    });
+});
+
+$('#save2').off('click').on('click', function () {
+    savePayrollInfo().then(function () {
+        showStep(2); // move to step 3 after save
+    }).catch(function (err) {
+        console.error('Save Step2 failed', err);
+    });
+});
+
+$('#save3').off('click').on('click', function () {
+    saveBankInfo().then(function () {
+        showStep(3); // move to step 4 after save
+    }).catch(function (err) {
+        console.error('Save Step3 failed', err);
+    });
+});
+
+// helper that always attempts to save Step1..Step3 sequentially
+function saveAllSteps() {
+    return Promise.resolve()
+        .then(() => saveBasicInfo().catch(err => Promise.reject({ step: 1, err })))
+        .then(() => savePayrollInfo().catch(err => Promise.reject({ step: 2, err })))
+        .then(() => saveBankInfo().catch(err => Promise.reject({ step: 3, err })));
+}
+
+// validate all steps and navigate to the first invalid one
+function validateAndGoToFirstInvalid() {
+    const validators = [
+        { fn: validateStep1, index: 0, name: 'Step 1' },
+        { fn: validateStep2, index: 1, name: 'Step 2' },
+        { fn: validateStep3, index: 2, name: 'Step 3' },
+        { fn: validateStep4, index: 3, name: 'Step 4' }
+    ];
+
+    for (let v of validators) {
+        // run validator — it will show field errors when returning false
+        if (!v.fn()) {
+            showStep(v.index); // switch to the tab that failed validation
+            return { valid: false, step: v.index + 1, name: v.name };
+        }
     }
 
-    $.ajax({
-        url: '/Employee/SaveBasicInfo',
-        type: 'POST',
-        data: fd,
-        processData: false,
-        contentType: false,
-        success: function (response) {
-            var saved = getSaved(response);
-            bindBasicInfo(saved);
-            showStep(1);
-        },
-        error: function () {
-            alert('Failed to save basic info.');
-        }
-    });
-});
+    return { valid: true };
+}
 
-$('#step2Next').off('click').on('click', function () {
-    if (!validateStep2()) return;
-    var data = {
-        EmployeeId: $('#employeeId').val(),
-        SalaryPerMonth: parseFloat($('#salaryPerMonth').val()) || 0,
-        SalaryPerYear: parseFloat($('#salaryPerYear').val()) || 0,
-        RecoveryMode: $('select').eq(6).val(),
-        InstallmentAmount: $('#installment').val(),
-        RecoveryCycle: $('select').eq(7).val(),
-        BiometricUserId: $('#biometricdevice').val()
-    };
-    $.ajax({
-        url: '/Employee/SavePayrollInfo',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function (response) {
-            var saved = getSaved(response);
-            bindPayrollInfo(saved);
-            fetchSalaryComponents(function () {
-                let salary = parseFloat($('#salaryPerMonth').val()) || 0;
-                renderSalaryBreakup(salary);
-            });
-            showStep(2);
-        },
-        error: function () {
-            alert('Failed to save payroll info.');
-        }
-    });
-});
-
-$('#step3Next').off('click').on('click', function () {
-    if (!validateStep3()) return;
-    var data = {
-        EmployeeId: $('#employeeId').val(),
-        BeneficiaryName: $('#beneficiary').val(),
-        BankName: $('#bankname').val(),
-        AccountNumber: $('#accountno').val(),
-        IFSCCode: $('#ifsc').val()
-    };
-    $.ajax({
-        url: '/Employee/SaveBankDetails',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function (response) {
-            showStep(3);
-        },
-        error: function () {
-            alert('Failed to save bank details.');
-        }
-    });
-});
-
+// Use this at final submit so validation fires and user is taken to offending tab
 $('#step4Finish').off('click').on('click', function () {
-    if (!validateStep4()) return;
-
-    if (!updateTotals()) {
-        alert('Fix errors in salary breakup (values exceed salary or invalid).');
+    // run validation for all steps first and navigate to first invalid step if any
+    const res = validateAndGoToFirstInvalid();
+    if (!res.valid) {
+        // focus user on the invalid tab; message optional
+        alert('Please fill required fields in ' + res.name + ' before final submit.');
         return;
     }
 
-    const salary = parseFloat($('#salaryPerMonth').val()) || 0;
-    const components = collectCheckedComponents();
-    if (components.length === 0) {
-        if (!confirm('No components selected. Do you want to submit with none selected?')) return;
-    }
+    // all validations passed visually — now attempt to save all steps and then breakup
+    saveAllSteps()
+        .then(function () {
+            // then validate salary breakup totals and save breakup
+            if (!updateTotals()) {
+                alert('Fix errors in salary breakup (values exceed salary or invalid).');
+                return;
+            }
 
-    const sum = components.reduce((s, c) => s + (c.Amount || 0), 0);
-    if (salary > 0 && sum > salary) {
-        alert('Selected components total exceeds Salary Per Month. Adjust values.');
-        return;
-    }
+            const salary = parseFloat($('#salaryPerMonth').val()) || 0;
+            const components = collectCheckedComponents();
+            if (components.length === 0) {
+                if (!confirm('No components selected. Do you want to submit with none selected?')) return;
+            }
 
-    var data = {
-        EmployeeId: $('#employeeId').val(),
-        SalaryComponents: components
-    };
-    $.ajax({
-        url: '/Employee/SaveSalaryBreakup',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(data),
-        success: function (response) {
-            alert('Salary breakup saved successfully.');
-        },
-        error: function () {
-            alert('Failed to save salary breakup.');
-        }
-    });
+            const sum = components.reduce((s, c) => s + (c.Amount || 0), 0);
+            if (salary > 0 && sum > salary) {
+                alert('Selected components total exceeds Salary Per Month. Adjust values.');
+                return;
+            }
+
+            var data = {
+                EmployeeId: $('#employeeId').val(),
+                SalaryComponents: components
+            };
+            $.ajax({
+                url: '/Employee/SaveSalaryBreakup',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (response) {
+                    alert('Salary breakup saved successfully.');
+                },
+                error: function () {
+                    alert('Failed to save salary breakup.');
+                }
+            });
+        })
+        .catch(function (err) {
+            // If a save failed, show that step/tab and alert user
+            const step = err && err.step ? err.step : 1;
+            showStep(step - 1);
+            alert('Please fix validation / save errors in Step ' + step + ' before final submit.');
+            console.error('Failed saving step', err);
+        });
 });

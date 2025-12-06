@@ -17,18 +17,18 @@
                     <!-- Wizard Navigation -->
                     <nav>
                         <div class="nav nav-tabs" id="nav-tab">
-                            <a class="nav-link active" id="step1-tab" data-bs-toggle="tab" href="#step1">Basic Info</a>
-                            <a class="nav-link" id="step2-tab" data-bs-toggle="tab" href="#step2">Payroll Info</a>
-                            <a class="nav-link" id="step3-tab" data-bs-toggle="tab" href="#step3">Bank Details</a>
-                            <a class="nav-link" id="step4-tab" data-bs-toggle="tab" href="#step4">Salary Breakup</a>
+                            <a class="nav-link nlink active" id="step1-tab" data-bs-toggle="tab" href="#step1">Basic Info</a>
+                            <a class="nav-link nlink" id="step2-tab" data-bs-toggle="tab" href="#step2">Payroll Info</a>
+                            <a class="nav-link nlink" id="step3-tab" data-bs-toggle="tab" href="#step3">Bank Details</a>
+                            <a class="nav-link nlink" id="step4-tab" data-bs-toggle="tab" href="#step4">Salary Breakup</a>
                         </div>
                     </nav>
 
                     <div class="tab-content" id="nav-tabContent">
                         <!-- STEP 1: Employee Details & Basic Info -->
-                        <div class="tab-pane fade show active" id="step1">
+                        <div class="tab-pane tp fade" id="step1">
                             <h4 class="card-title mt-3 mb-2">Employee Details</h4>
-                            <input type="hidden" id="employeeId" />
+                            @* <input type="hidden" id="employeeId" /> *@
                             <!-- Employee core details -->
                             <div class="row">
                                 <div class="col-md-6 mb-2">
@@ -134,14 +134,18 @@
                                 </div>
 
                             </div>
-
-                            <div class="mt-3 text-end">
-                                <button type="button" class="btn btn-primary" id="step1Next">Save & Next</button>
+                            <div class="d-flex justify-content-between align-items-center float-end">
+                                <div class="d-flex gap-2">
+                                    @* <button type="button" class="btn btn-primary">Save</button> *@
+                                    <button type="button" class="btn btn-primary" id="step1Next">Next</button>
+                                   
+                                </div>
                             </div>
+                         
                         </div>
 
                         <!-- STEP 2: Payroll Info -->
-                        <div class="tab-pane fade" id="step2">
+                        <div class="tab-pane tp fade" id="step2">
                             <h4 class="card-title mt-3 mb-2">Payroll & Salary Details</h4>
                             <div class="row">
                                 <div class="col-md-6 mb-2">
@@ -177,14 +181,20 @@
                                     <input type="text" class="form-control" placeholder="Biometric Device ID" id="biometricdevice">
                                 </div>
                             </div>
-                            <div>
-                                <button type="button" class="btn btn-secondary float-start" id="step2Prev">Previous</button>
-                                <button type="button" class="btn btn-primary float-end" id="step2Next">Save & Next</button>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="button" class="btn btn-secondary" id="step2Prev">Previous</button>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    
+                                    @* <button type="button" class="btn btn-primary">Save</button> *@
+                                    <button type="button" class="btn btn-primary" id="step2Next">Next</button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- STEP 3: Bank Details -->
-                        <div class="tab-pane fade" id="step3">
+                        <div class="tab-pane tp fade" id="step3">
                             <h4 class="card-title mt-3 mb-2">Bank Details</h4>
                             <div class="row">
                                 <div class="col-md-6 mb-2">
@@ -204,14 +214,21 @@
                                     <input type="text" class="form-control" placeholder="IFSC Code" id="ifsc" data-required="true">
                                 </div>
                             </div>
-                            <div>
-                                <button type="button" id="step3Prev" class="btn btn-secondary float-start">Previous</button>
-                                <button type="button" id="step3Next" class="btn btn-primary float-end">Save & Next</button>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="button" class="btn btn-secondary" id="step3Prev">Previous</button>
+                                </div>
+                                <div class="d-flex gap-2">
+                                   
+                                    @* <button type="button" class="btn btn-primary" >Save</button> *@
+                                    <button type="button" class="btn btn-primary" id="step3Next">Next</button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- STEP 4: Salary Breakup -->
-                        <div class="tab-pane fade" id="step4">
+                        <div class="tab-pane tp fade" id="step4">
                             <h4 class="card-title mt-3 mb-2">Salary Breakup</h4>
                             <div class="table-responsive">
                                 <div id="salaryBreakupTable"></div>
@@ -222,7 +239,7 @@
                             </div>
                             <div>
                                 <button type="button" id="step4Prev" class="btn btn-secondary float-start">Previous</button>
-                                <button type="button" id="step4Finish" class="btn btn-danger float-end">Finish</button>
+                                <button type="button" id="step4Finish" class="btn btn-danger float-end">Finish & Submit</button>
                             </div>
                         </div>
                     </div>
