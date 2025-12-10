@@ -1,6 +1,8 @@
-﻿using HR_Payroll.Core.Model;
+﻿using HR_Payroll.Core.DTO.Dept;
+using HR_Payroll.Core.Model;
 using HR_Payroll.Core.Response;
 using HR_Payroll.Core.Services;
+using HR_Payroll.Web.CommonClients;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity.Data;
@@ -17,15 +19,18 @@ namespace HR_Payroll.Web.Controllers
     public class MarkAttendanceController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly CommonAPI_Client _apiClient;
         private readonly ILogger<MarkAttendanceController> _logger;
         private readonly IConfiguration _configuration;
         private readonly AuthCookieService _authCookieService;
         public MarkAttendanceController(IHttpClientFactory httpClientFactory,
+            CommonAPI_Client apiClient,
             ILogger<MarkAttendanceController> logger,
             AuthCookieService authCookieService,
             IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _apiClient = apiClient;
             _logger = logger;
             _authCookieService = authCookieService;
             _configuration = configuration;
@@ -266,10 +271,7 @@ namespace HR_Payroll.Web.Controllers
 
         #region------------------- Attendance Calender/ Data View -------------------
 
-        public IActionResult AttendanceCalender()
-        {
-            return View();
-        }
+        public IActionResult AttendanceCalender() => View();
 
         [HttpPost]
         public async Task<IActionResult> GetAttendanceCalendar(DateTime? fromDate, DateTime? toDate)
@@ -344,12 +346,8 @@ namespace HR_Payroll.Web.Controllers
                 });
             }
         }
-
-
-        public IActionResult AttendanceData()
-        {
-            return View();
-        }
+      
+        public IActionResult AttendanceData() => View();
 
         public async Task<IActionResult> GetAttendanceReport(DateTime? fromDate,DateTime? toDate, int length, int start)
         {
@@ -431,6 +429,36 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceHistory(DateTime? attendanceDate)
+        {
+            var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+            var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+            if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+            {
+                return Unauthorized(new { status = false, message = "Missing tokens." });
+            }
+
+            _apiClient.SetTokens(accessToken, refreshToken);
+
+            var result = await _apiClient.GetAsync<List<AttendanceHistoryModel>>(
+                "Attendance/AttendanceHistory",
+                new Dictionary<string, string> { { "attendanceDate", attendanceDate.Value.ToString("yyyy-MM-dd") } }
+            );
+
+            if (!result.status)
+            {
+                return Json( new { status = false, message = result.message });
+            }
+
+            return Json(new
+            {
+                status = true,
+                message = "Attendance history fetched.",
+                data = result.data
+            });
+        }
 
         #endregion
     }

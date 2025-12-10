@@ -279,5 +279,44 @@ namespace HR_Payroll.API.Controllers
                 });
             }
         }
+
+        [HttpGet]
+        [Route("AttendanceHistory")]
+        [Authorize(Roles = "Employee,HR,Manager,Team Lead")]
+        public async Task<ActionResult> AttendanceHistory([FromQuery] DateTime? attendanceDate)
+        {
+            try
+            {
+                var result = await _attendanceRepository.GetAttendanceHistoryAsync(attendanceDate);
+
+                if (!result.IsSuccess)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = result.Message ?? "Failed to retrieve attendance history",
+                        data = new List<object>()
+                    });
+                }
+
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
+                    message = result.Message ?? "Attendance history retrieved successfully",
+                    data = result.Entity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving attendance history");
+                return StatusCode(500, new DataResponse<object>
+                {
+                    status = false,
+                    message = "An error occurred while processing your request.",
+                    data = new List<object>()
+                });
+            }
+        }
+
     }
 }

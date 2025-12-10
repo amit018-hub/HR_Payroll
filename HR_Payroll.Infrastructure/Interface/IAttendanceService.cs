@@ -17,5 +17,6 @@ namespace HR_Payroll.Infrastructure.Interface
         //Task<ShiftDetails> GetEmployeeShiftDetailsAsync(int employeeId, DateTime? checkDate = null);
         Task<PagedResult<AttendanceDto>> GetAttendanceReportAsync(AttendanceRequestModel model);
         Task<Result<List<CalenderResponseModel>>> GetAttendanceCalendarAsync(CalenderRequestModel model);
+        Task<Result<List<AttendanceHistoryModel>>> GetAttendanceHistoryAsync(DateTime? attendanceDate);
     }
 }

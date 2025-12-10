@@ -28,6 +28,7 @@ namespace HR_Payroll.API.Controllers
         }
 
         public string fileDirectory => _configuration.GetValue<string>("FileUploadSettings:BaseDirectory");
+
         private int GetEmployeeIdFromClaims()
         {
             var empIdClaim = HttpContext?.User.FindFirst("EmployeeId")?.Value;

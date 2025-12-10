@@ -63,13 +63,23 @@ function initAttendanceTable() {
         columns: [
             {
                 data: 'attendanceDate',
-                title: 'Date',
-                render: function (d) {
-                    if (!d) return '-';
+                title: 'Action',
+                render: function (d, type, row) {
+                    if (!d) return "-";
+
                     const date = new Date(d);
-                    return date.toLocaleDateString('en-GB'); // DD/MM/YYYY
-                }
-            },
+                    let dateStr = date.toLocaleDateString('en-GB');
+
+                    return `
+                        <a class="view-attendance-btn text-primary" href="#"
+                            data-id="${row.attendanceDate}">
+                            ${dateStr}
+                        </a>
+                    `;
+                },
+                className: "text-center"
+            }
+,
             {
                 data: 'dayName',
                 title: 'Day',
@@ -111,23 +121,56 @@ function initAttendanceTable() {
             {
                 data: 'workingHoursFormatted',
                 title: 'Hours Worked',
-                render: function (d) {
-                    return d || '-';
+                render: function (d, type, row) {
+
+                    // Return value if already calculated from backend
+                    if (d) {
+                        // d = "2:15" OR "05:07" etc.
+                        const parts = d.split(':');
+                        if (parts.length === 2) {
+                            const h = parseInt(parts[0], 10);
+                            const m = parseInt(parts[1], 10);
+                            return `${h}h ${m}m`;
+                        }
+                        return d; // fallback
+                    }
+
+                    // If no check-in time → impossible to calculate
+                    if (!row.checkInTime) return '-';
+
+                    // Build a valid datetime from attendanceDate + checkInTime
+                    const baseDate = row.attendanceDate.split('T')[0];  // "2025-12-10"
+                    const checkInStr = `${baseDate} ${row.checkInTime}`; // "2025-12-10 21:07:36"
+                    const checkIn = new Date(checkInStr);
+
+                    if (isNaN(checkIn)) return "-"; // still invalid? show -
+
+                    // If check-out exists, calculate difference
+                    if (row.checkOutTime) {
+                        const checkOutStr = `${baseDate} ${row.checkOutTime}`;
+                        const checkOut = new Date(checkOutStr);
+                        return calculateHours(checkIn, checkOut);
+                    }
+
+                    // No Check-out ⇒ calculate live hours
+                    const midnight = new Date(baseDate + ' 23:59:59');
+                    return calculateHours(checkIn, midnight);
                 },
                 className: 'text-center'
             },
             {
                 data: 'status',
                 title: 'Status',
-                render: function (d, type, row) {
-                    let color = 'blue';
-                    if (d === 'Present') color = 'green';
-                    else if (d === 'Absent') color = 'red';
-                    else if (d === 'Weekend') color = 'gray';
+                render: function (status, type, row) {
 
-                    let title = `Shift: ${row.shiftName || '-'}\nRemarks: ${row.remarks || '-'}`;
+                    // Tooltip information
+                    let tooltip = `Shift: ${row.shiftName || 'N/A'}\nRemarks: ${row.remarks || '-'}`;
 
-                    return `<span style="color:${color}; font-weight: bold;" title="${title}">${d || 'N/A'}</span>`;
+                    // Get formatted badge using your function
+                    let badge = getStatusBadge(status);
+
+                    // Wrap badge with tooltip
+                    return `<span title="${tooltip}">${badge}</span>`;
                 },
                 className: 'text-center'
             }
@@ -170,3 +213,119 @@ function initAttendanceTable() {
         }
     });
 }
+
+function calculateHours(start, end) {
+    const diffMs = end - start; // milliseconds
+
+    if (diffMs <= 0) return "-";
+
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${diffHrs}h ${diffMins}m`;
+}
+
+function getStatusBadge(status) {
+    if (!status) return '<span class="badge bg-secondary">N/A</span>';
+
+    const statusLower = status.toLowerCase().trim();
+    let badgeClass = 'bg-secondary';
+    let icon = '<i class="mdi mdi-calendar-remove me-1"></i>';
+
+    if (statusLower === 'present') {
+        badgeClass = 'bg-success';
+        icon = '<i class="mdi mdi-check-circle me-1"></i>';
+    } else if (statusLower === 'absent') {
+        badgeClass = 'bg-danger';
+        icon = '<i class="mdi mdi-close-circle me-1"></i>';
+    } else if (statusLower === 'wfh' || statusLower === 'work from home') {
+        badgeClass = 'bg-info';
+        icon = '<i class="mdi mdi-home me-1"></i>';
+    } else if (statusLower === 'half day' || statusLower === 'halfday') {
+        badgeClass = 'bg-warning';
+        icon = '<i class="mdi mdi-clock-outline me-1"></i>';
+    } else if (statusLower.includes("leave")) {
+        badgeClass = 'bg-warning';
+        icon = '<i class="mdi mdi-briefcase-remove-outline me-1"></i>';
+    }
+
+    return `<span class="badge ${badgeClass}">${icon}${status}</span>`;
+}
+
+// When user clicks "View" button in table
+$(document).on("click", ".view-attendance-btn", function () {
+    let attendanceDate = $(this).data("id");
+    loadAttendanceModal(attendanceDate);
+});
+
+
+function loadAttendanceModal(attendanceDate) {
+
+    $("#attendanceModal").modal("show");
+    $("#attendanceModalBody").html(`<p>Loading...</p>`);
+
+    $.ajax({
+        url: '/MarkAttendance/GetAttendanceHistory?attendanceDate=' + attendanceDate,
+        type: 'GET',
+        success: function (res) {
+
+            if (!res.data || res.data.length === 0) {
+                $("#attendanceModalBody").html("<p class=text-center>No attendance found.</p>");
+                return;
+            }
+
+            let html = `
+                <table class="table table-bordered table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Action</th>
+                            <th>Action Time</th>                            
+                            <th>Location</th>
+                            <th>Geo Status</th>
+                            <th>IP</th>
+                            <th>Device</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            res.data.forEach(h => {
+
+                let actionBadge =
+                    h.actionType === "CheckIn"
+                        ? `<span class="badge bg-success"><i class="mdi mdi-login"></i> Check-In</span>`
+                        : `<span class="badge bg-danger"><i class="mdi mdi-logout"></i> Check-Out</span>`;
+
+                let geoBadge =
+                    h.isWithinGeofence === 1
+                        ? `<span class="badge bg-success">Inside Office</span>`
+                        : `<span class="badge bg-danger">Outside Office</span>`;
+
+                html += `
+                    <tr>
+                        <td>${actionBadge}</td>
+                        <td>${h.actionTime}</td>
+                        <td>${h.address}</td>
+                        <td>
+                            ${geoBadge}<br>
+                            ${h.distanceFromOffice} m
+                        </td>
+                        <td>${h.ipAddress}</td>
+                        <td>${h.deviceInfo}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+
+            $("#attendanceModalBody").html(html);
+        },
+
+        error: function () {
+            $("#attendanceModalBody").html(
+                "<p class='text-danger'>Failed to load attendance history.</p>"
+            );
+        }
+    });
+}
+

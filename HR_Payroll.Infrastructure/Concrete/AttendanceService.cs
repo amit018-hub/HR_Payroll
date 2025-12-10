@@ -319,5 +319,86 @@ namespace HR_Payroll.Infrastructure.Concrete
                 };
             }
         }
+
+        public async Task<Result<List<AttendanceHistoryModel>>> GetAttendanceHistoryAsync(DateTime? attendanceDate)
+        {
+            try
+            {
+                var connection = _context.Database.GetDbConnection();
+
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync();
+
+                string sql = @"
+                    SELECT 
+                        HistoryID,
+                        AttendanceID,
+                        ActionType,
+                        ActionTime,
+                        PunchTime,
+                        Latitude,
+                        Longitude,
+                        Location,
+                        Address,
+                        IsWithinGeofence,
+                        DistanceFromOffice,
+                        Remarks,
+                        IPAddress,
+                        DeviceInfo,
+                        CreatedDate,
+                        CreatedBy
+                    FROM AttendanceHistory
+                    WHERE CAST(ActionTime AS DATE) = @AttendanceDate
+                    ORDER BY ActionTime ASC;
+                ";
+
+                var result = await connection.QueryAsync<AttendanceHistoryModel>(
+                   sql,
+                   new { AttendanceDate = attendanceDate.Value.Date }
+                );
+
+                var list = result?.ToList() ?? new List<AttendanceHistoryModel>();
+
+                if (!list.Any())
+                {
+                    return new Result<List<AttendanceHistoryModel>>
+                    {
+                        IsSuccess = false,
+                        Message = "No attendance history found.",
+                        Entity = list
+                    };
+                }
+
+                return new Result<List<AttendanceHistoryModel>>
+                {
+                    IsSuccess = true,
+                    Message = "Attendance history retrieved successfully.",
+                    Entity = list
+                };
+            }
+            catch (SqlException sqlEx)
+            {
+                _logger.LogError(sqlEx, "SQL error while fetching attendance history for AttendanceDate {AttendanceDate}", attendanceDate);
+
+                return new Result<List<AttendanceHistoryModel>>
+                {
+                    IsSuccess = false,
+                    Message = "Database error occurred. Please try again later.",
+                    Entity = null
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching attendance history for AttendanceDate {AttendanceDate}", attendanceDate);
+
+                return new Result<List<AttendanceHistoryModel>>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occurred. Please contact support.",
+                    Entity = null
+                };
+            }
+        }
+
     }
 }
