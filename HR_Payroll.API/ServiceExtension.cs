@@ -19,10 +19,10 @@ namespace HR_Payroll.API
             services.AddScoped<IDepartmentServices, DepartmentServices>();
             services.AddScoped<ISubDepartmentServices, SubDepartmentServices>();
             services.AddScoped<ILeaveService, LeaveService>();
-
-            services.AddScoped<IEmployeeService, EmployeeService>();
-            
+            services.AddScoped<IEmployeeService, EmployeeService>();     
             services.AddScoped<ISalaryService, SalaryService>();
+
+            services.AddScoped<IDashboardService, DashboardService>();
         }
     }
 }

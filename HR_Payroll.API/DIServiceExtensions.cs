@@ -115,7 +115,7 @@ namespace HR_Payroll.API
                     },
                     OnChallenge = context =>
                     {
-                        context.HandleResponse(); // Prevents the default 401 redirect
+                        //context.HandleResponse(); // Prevents the default 401 redirect
 
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";

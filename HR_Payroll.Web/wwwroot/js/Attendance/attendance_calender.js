@@ -49,15 +49,24 @@
 
                         if (eventDate > today) return; // Skip future dates
 
-                        let bg = "#17a2b8", txt = "#fff";
-
+                        let bg = "#17a2b8", txt = "#fff";                        
                         switch (x.status) {
                             case "Present": bg = "#28a745"; break;
                             case "Absent": bg = "#dc3545"; break;
                             case "Weekend": bg = "#6c757d"; break;
                             default:
                                 if (x.status?.startsWith("Leave"))
-                                    bg = "#007bff";
+                                    bg = "#ff9f43";
+                        }
+
+                        let iconHtml = "";
+                        switch (x.status) {
+                            case "Present": iconHtml = '<i class="mdi mdi-check-circle text-white"></i>'; break;
+                            case "Absent": iconHtml = '<i class="mdi mdi-close-circle text-white"></i>'; break;
+                            case "Weekend": iconHtml = '<i class="mdi mdi-calendar text-white"></i>'; break;
+                            default:
+                                if (x.status?.toLowerCase().includes("leave"))
+                                    iconHtml = '<i class="mdi mdi-briefcase-remove-outline text-white"></i>';  // 🌴 NEW LEAVE ICON
                         }
 
                         events.push({
@@ -68,7 +77,9 @@
                             backgroundColor: bg,
                             textColor: txt,
                             extendedProps: {
-                                remarks: x.leaveRemarks || x.attendanceRemarks
+                                iconHtml: iconHtml, 
+                                remarks: x.leaveRemarks || x.remarks,
+                                badgeHtml: getStatusBadge(x.status)
                             }
                         });
                     });
@@ -82,6 +93,11 @@
                 }
             });
         },
+        eventContent: function (arg) {
+            return {
+                html: arg.event.extendedProps.iconHtml + " " + arg.event.title
+            };
+        },
 
         eventDidMount: function (info) {
             if (info.event.extendedProps.remarks) {
@@ -92,7 +108,8 @@
         // 🔥 USER CLICKS ANY EVENT → UPDATE LEFT PANEL
         eventClick: function (info) {
 
-            let status = info.event.title.replace("\n", " ");
+            //let status = info.event.title.replace("\n", " ");
+            let status = info.event.extendedProps.badgeHtml;
             let date = info.event.startStr;
             let remarks = info.event.extendedProps.remarks || "No remarks found";
 
@@ -131,15 +148,15 @@ function bindLastFive(data) {
 
     lastFive.forEach(x => {
         let date = x.attendanceDate.split("T")[0];
-        let remarks = x.leaveRemarks || x.attendanceRemarks || "No remarks available";
-
+        let remarks = x.leaveRemarks || x.remarks || "No remarks available";
+        let badge = getStatusBadge(x.status);
         html += `
             <li class="list-group-item align-items-center d-flex">
                 <div class="media">
                     <img src="/assets/images/small/calendar.svg"
                         class="me-3 thumb-sm align-self-center rounded-circle" alt="">
                     <div class="media-body align-self-center">
-                        <h6 class="mt-0 mb-1">${x.status}</h6>
+                        <h6 class="mt-0 mb-1">${badge}</h6>
                         <p class="text-muted mb-0"><b>Date:</b> ${date}</p>
                         <p class="text-muted mb-0"><b>Remarks:</b> ${remarks}</p>
                     </div>
@@ -149,4 +166,31 @@ function bindLastFive(data) {
     });
 
     $("#attendanceDetailsBox").html(html);
+}
+
+function getStatusBadge(status) {
+    if (!status) return '<span class="badge bg-secondary">N/A</span>';
+
+    const statusLower = status.toLowerCase().trim();
+    let badgeClass = 'bg-secondary';
+    let icon = '<i class="mdi mdi-calendar-remove me-1"></i>';
+
+    if (statusLower === 'present') {
+        badgeClass = 'bg-success';
+        icon = '<i class="mdi mdi-check-circle me-1"></i>';
+    } else if (statusLower === 'absent') {
+        badgeClass = 'bg-danger';
+        icon = '<i class="mdi mdi-close-circle me-1"></i>';
+    } else if (statusLower === 'wfh' || statusLower === 'work from home') {
+        badgeClass = 'bg-info';
+        icon = '<i class="mdi mdi-home me-1"></i>';
+    } else if (statusLower === 'half day' || statusLower === 'halfday') {
+        badgeClass = 'bg-warning';
+        icon = '<i class="mdi mdi-clock-outline me-1"></i>';
+    } else if (statusLower.includes("leave")) {
+        badgeClass = 'bg-warning';
+        icon = '<i class="mdi mdi-briefcase-remove-outline me-1"></i>';
+    }
+
+    return `<span class="badge ${badgeClass}">${icon}${status}</span>`;
 }
