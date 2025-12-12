@@ -1,10 +1,11 @@
-﻿$(function () {
+﻿var savedSteps = { step1: false, step2: false, step3: false };
+$(function () {
 
     const steps = ["#step1", "#step2", "#step3", "#step4"];
     showStep(0);
 
     // track which steps were saved explicitly
-    const savedSteps = { step1: false, step2: false, step3: false };
+    
 
     function showStep(stepIndex) {
 
@@ -595,13 +596,13 @@ $('#save3').off('click').on('click', function () {
     });
 });
 
-// helper that always attempts to save Step1..Step3 sequentially
-function saveAllSteps() {
-    return Promise.resolve()
-        .then(() => saveBasicInfo().catch(err => Promise.reject({ step: 1, err })))
-        .then(() => savePayrollInfo().catch(err => Promise.reject({ step: 2, err })))
-        .then(() => saveBankInfo().catch(err => Promise.reject({ step: 3, err })));
-}
+//// helper that always attempts to save Step1..Step3 sequentially
+//function saveAllSteps() {
+//    return Promise.resolve()
+//        .then(() => saveBasicInfo().catch(err => Promise.reject({ step: 1, err })))
+//        .then(() => savePayrollInfo().catch(err => Promise.reject({ step: 2, err })))
+//        .then(() => saveBankInfo().catch(err => Promise.reject({ step: 3, err })));
+//}
 
 // validate all steps and navigate to the first invalid one
 function validateAndGoToFirstInvalid() {
@@ -624,58 +625,223 @@ function validateAndGoToFirstInvalid() {
 }
 
 // Use this at final submit so validation fires and user is taken to offending tab
-$('#step4Finish').off('click').on('click', function () {
-    // run validation for all steps first and navigate to first invalid step if any
+//$('#step4Finish').off('click').on('click', function () {
+//    // run validation for all steps first and navigate to first invalid step if any
+//    const res = validateAndGoToFirstInvalid();
+//    if (!res.valid) {
+//        // focus user on the invalid tab; message optional
+//        alert('Please fill required fields in ' + res.name + ' before final submit.');
+//        return;
+//    }
+
+//    // all validations passed visually — now attempt to save all steps and then breakup
+//    saveAllSteps()
+//        .then(function () {
+//            // then validate salary breakup totals and save breakup
+//            if (!updateTotals()) {
+//                alert('Fix errors in salary breakup (values exceed salary or invalid).');
+//                return;
+//            }
+
+//            const salary = parseFloat($('#salaryPerMonth').val()) || 0;
+//            const components = collectCheckedComponents();
+//            if (components.length === 0) {
+//                if (!confirm('No components selected. Do you want to submit with none selected?')) return;
+//            }
+
+//            const sum = components.reduce((s, c) => s + (c.Amount || 0), 0);
+//            if (salary > 0 && sum > salary) {
+//                alert('Selected components total exceeds Salary Per Month. Adjust values.');
+//                return;
+//            }
+
+//            var data = {
+//                EmployeeId: $('#employeeId').val(),
+//                SalaryComponents: components
+//            };
+//            $.ajax({
+//                url: '/Employee/SaveSalaryBreakup',
+//                type: 'POST',
+//                contentType: 'application/json',
+//                data: JSON.stringify(data),
+//                success: function (response) {
+//                    alert('Salary breakup saved successfully.');
+//                },
+//                error: function () {
+//                    alert('Failed to save salary breakup.');
+//                }
+//            });
+//        })
+//        .catch(function (err) {
+//            // If a save failed, show that step/tab and alert user
+//            const step = err && err.step ? err.step : 1;
+//            showStep(step - 1);
+//            alert('Please fix validation / save errors in Step ' + step + ' before final submit.');
+//            console.error('Failed saving step', err);
+//        });
+//});
+
+
+// Single-payload save: collect all steps and submit in one FormData request
+const saveAllUrl = '/Employee/SaveAllEmployeeData'; // adjust server endpoint if different
+
+function collectAllPayload() {
+    // Basic info
+    const basic = {
+        EmployeeId: $('#employeeId').val() || null,
+        EmployeeCode: $('#empcode').val(),
+        FirstName: $('#firstname').val(),
+        LastName: $('#lastname').val(),
+        DepartmentId: $('#department').val() || '',
+        SubDepartmentId: $('#subDepartment').val() || '',
+        State: $('#state').val() || '',
+        JoiningDate: $('#joiningdate').val() || '',
+        ReportingTo: $('#reporting').val() || '',
+        SourceOfHire: $('#sourceofhire').val() || '',
+        Interviewer: $('#interviewer').val() || '',
+        AttendanceRules: $('#attendance').val() || '',
+        EmploymentStatus: $('#employmentstatus').val() || '',
+        MaritalStatus: $('#maritalstatus').val() || '',
+        AadharNo: $('#aadhar').val() || '',
+        PANNo: $('#pan').val() || '',
+        PFNo: $('#pf').val() || '',
+        UANNo: $('#uan').val() || '',
+        ESINo: $('#esi').val() || '',
+        NoticePeriod: $('#noticeperiod').val() || ''
+    };
+
+    // Payroll
+    const payroll = {
+        SalaryPerMonth: parseFloat($('#salaryPerMonth').val()) || 0,
+        SalaryPerYear: parseFloat($('#salaryPerYear').val()) || 0,
+        RecoveryMode: $('#recoverymode').val(),
+        InstallmentAmount: $('#installment').val(),
+        RecoveryCycle: $('#recoverycycle').val(),
+        BiometricUserId: $('#biometricdevice').val()
+    };
+
+    // Bank
+    const bank = {
+        BeneficiaryName: $('#beneficiary').val() || '',
+        BankName: $('#bankname').val() || '',
+        AccountNumber: $('#accountno').val() || '',
+        IFSCCode: $('#ifsc').val() || ''
+    };
+
+    // Salary components (checked)
+    const components = collectCheckedComponents();
+
+    return { basic, payroll, bank, components };
+}
+
+function saveAllOnePayload() {
+    // Run validation and navigate to first invalid if any
     const res = validateAndGoToFirstInvalid();
     if (!res.valid) {
-        // focus user on the invalid tab; message optional
-        alert('Please fill required fields in ' + res.name + ' before final submit.');
+        alert('Please fill required fields in ' + res.name + ' before saving.');
         return;
     }
 
-    // all validations passed visually — now attempt to save all steps and then breakup
-    saveAllSteps()
-        .then(function () {
-            // then validate salary breakup totals and save breakup
-            if (!updateTotals()) {
-                alert('Fix errors in salary breakup (values exceed salary or invalid).');
-                return;
+    // Validate salary breakup totals too
+    if (!updateTotals()) {
+        alert('Fix errors in salary breakup (values exceed salary or invalid).');
+        return;
+    }
+
+    const payload = collectAllPayload();
+
+    // Build FormData so file (profile) can be uploaded as well
+    const fd = new FormData();
+
+    // Append basic fields
+    Object.entries(payload.basic).forEach(([k, v]) => fd.append(k, v ?? ''));
+
+    // Append payroll & bank
+    Object.entries(payload.payroll).forEach(([k, v]) => fd.append(k, v ?? ''));
+    Object.entries(payload.bank).forEach(([k, v]) => fd.append(k, v ?? ''));
+
+    // Append components as JSON
+    fd.append('SalaryComponents', JSON.stringify(payload.components || []));
+
+    // Append profile picture if provided
+    const fileInput = $('#profile')[0];
+    if (fileInput && fileInput.files && fileInput.files.length) {
+        fd.append('ProfilePicture', fileInput.files[0]);
+    }
+
+    // POST single payload
+    $.ajax({
+        url: saveAllUrl,
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+            const saved = getSaved(response);
+
+            function resetWizard() {
+                // clear simple inputs/textarea/number/date/hidden
+                $('#employeeWizard').find('input[type="text"], input[type="number"], input[type="date"], input[type="hidden"], textarea').val('');
+                // reset selects
+                $('#employeeWizard').find('select').prop('selectedIndex', 0);
+                // uncheck checkboxes/radios
+                $('#employeeWizard').find('input[type="checkbox"], input[type="radio"]').prop('checked', false);
+                // clear file inputs
+                $('#employeeWizard').find('input[type="file"]').val('');
+                // clear salary components & table
+                salaryComponents = [];
+                $('#salaryBreakupTable').html('');
+                // reset totals
+                $('#selectedTotal').text('0.00');
+                $('#TotalSelectedText').text('0.00');
+                $('#remainingAmount').text('0.00').removeClass('text-danger');
+                // remove all validation states
+                clearAllErrors($('#employeeWizard'));
+                // reset saved steps tracking
+                savedSteps = { step1: false, step2: false, step3: false };
             }
 
-            const salary = parseFloat($('#salaryPerMonth').val()) || 0;
-            const components = collectCheckedComponents();
-            if (components.length === 0) {
-                if (!confirm('No components selected. Do you want to submit with none selected?')) return;
+            // If you want to keep returned values in form (e.g. EmployeeId) comment out resetWizard call.
+            // We will reset form completely and then go to step 1.
+            resetWizard();
+
+            // If server returned id and you prefer to keep it, set it after reset:
+            if (generatedId) {
+                $('#employeeId').val(generatedId);
             }
 
-            const sum = components.reduce((s, c) => s + (c.Amount || 0), 0);
-            if (salary > 0 && sum > salary) {
-                alert('Selected components total exceeds Salary Per Month. Adjust values.');
-                return;
-            }
-
-            var data = {
-                EmployeeId: $('#employeeId').val(),
-                SalaryComponents: components
-            };
-            $.ajax({
-                url: '/Employee/SaveSalaryBreakup',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function (response) {
-                    alert('Salary breakup saved successfully.');
-                },
-                error: function () {
-                    alert('Failed to save salary breakup.');
-                }
+            // Ensure components are re-fetched (if desired)
+            fetchSalaryComponents(function () {
+                let salary = parseFloat($('#salaryPerMonth').val()) || 0;
+                if (salary > 0) renderSalaryBreakup(salary);
             });
-        })
-        .catch(function (err) {
-            // If a save failed, show that step/tab and alert user
-            const step = err && err.step ? err.step : 1;
-            showStep(step - 1);
-            alert('Please fix validation / save errors in Step ' + step + ' before final submit.');
-            console.error('Failed saving step', err);
-        });
+
+            // Move back to first step
+            showStep(0);
+
+            alert('All data saved successfully.');
+        },
+        error: function (xhr) {
+            // If server returned validation errors, try to surface them
+            try {
+                const json = xhr.responseJSON || JSON.parse(xhr.responseText || '{}');
+                // Example: server returns { step: 2, fieldErrors: [...] } — handle as needed
+                if (json && json.step) {
+                    showStep(json.step - 1);
+                    alert(json.message || ('Errors in step ' + json.step));
+                } else {
+                    alert('Failed to save data. See console for details.');
+                    console.error(xhr);
+                }
+            } catch (ex) {
+                alert('Failed to save data. See console for details.');
+                console.error(xhr);
+            }
+        }
+    });
+}
+
+// Replace final handler to call single-payload save
+$('#step4Finish').off('click').on('click', function () {
+    saveAllOnePayload();
 });

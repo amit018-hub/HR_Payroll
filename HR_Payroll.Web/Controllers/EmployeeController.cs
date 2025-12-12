@@ -3,6 +3,8 @@ using HR_Payroll.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace HR_Payroll.Web.Controllers
 {
@@ -178,6 +180,64 @@ namespace HR_Payroll.Web.Controllers
                 return Json(new { status = false, error = ex.Message });
             }
         }
+        [HttpPost]
+        public async Task<JsonResult> SaveAllEmployeeData(
+      [FromForm] EmployeeBasicInfoViewModel basic,
+      [FromForm] EmployeePayrollViewModel payroll,
+      [FromForm] EmployeeBankViewModel bank,
+      [FromForm] string SalaryComponents,  // JSON from UI
+      [FromForm] IFormFile? ProfilePicture)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                using var multipart = new MultipartFormDataContent();
+
+                // Append Basic Properties (flat)
+                foreach (var prop in basic.GetType().GetProperties())
+                {
+                    var value = prop.GetValue(basic)?.ToString() ?? "";
+                    multipart.Add(new StringContent(value), prop.Name);
+                }
+
+                // Append Payroll Properties (flat)
+                foreach (var prop in payroll.GetType().GetProperties())
+                {
+                    var value = prop.GetValue(payroll)?.ToString() ?? "";
+                    multipart.Add(new StringContent(value), prop.Name);
+                }
+
+                // Append Bank Properties (flat)
+                foreach (var prop in bank.GetType().GetProperties())
+                {
+                    var value = prop.GetValue(bank)?.ToString() ?? "";
+                    multipart.Add(new StringContent(value), prop.Name);
+                }
+
+                // Salary Components JSON
+                multipart.Add(new StringContent(SalaryComponents, Encoding.UTF8, "application/json"), "SalaryComponents");
+
+                // Profile Picture
+                if (ProfilePicture != null && ProfilePicture.Length > 0)
+                {
+                    var streamContent = new StreamContent(ProfilePicture.OpenReadStream());
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(ProfilePicture.ContentType);
+                    multipart.Add(streamContent, "ProfilePicture", ProfilePicture.FileName);
+                }
+
+                // Send to API
+                var response = await client.PostAsync($"{_apiBaseUrl}Employee/SaveAllEmployeeData", multipart);
+                var content = await response.Content.ReadAsStringAsync();
+
+                return Json(new { status = response.IsSuccessStatusCode, response = content });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, error = ex.Message });
+            }
+        }
+
+
     }
 
 }

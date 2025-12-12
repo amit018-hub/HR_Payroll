@@ -1,8 +1,10 @@
 ﻿using HR_Payroll.CommonCases.Utility;
+using HR_Payroll.Core.Model;
 using HR_Payroll.Core.Models;
 using HR_Payroll.Infrastructure.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace HR_Payroll.API.Controllers
 {
@@ -25,7 +27,10 @@ namespace HR_Payroll.API.Controllers
         }
         [HttpPost]
         [Route("SaveBasicInfo")]
-        public async Task<IActionResult> SaveBasicInfo([FromForm] EmployeeBasicInfoViewModel model)
+        public async Task<IActionResult> SaveBasicInfo([FromForm] EmployeeBasicInfoViewModel model,[FromForm] EmployeeBasicInfoViewModel basic,
+            [FromForm] EmployeePayrollViewModel? payroll,
+            [FromForm] EmployeeBankViewModel? bank,
+            [FromForm] string? SalaryComponents)
         {
             if (model == null)
                 return BadRequest(new { status = false, message = "Invalid payload" });
@@ -52,27 +57,75 @@ namespace HR_Payroll.API.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("SaveBankDetails")]
-        public async Task<IActionResult> SaveBankDetails([FromBody] EmployeeBankViewModel model)
+        [HttpPost("SaveAllEmployeeData")]
+        public async Task<IActionResult> SaveAllEmployeeData(
+    [FromForm] EmployeeBasicInfoViewModel basic,
+    [FromForm] string? payroll,                  // JSON string
+    [FromForm] string? bank,                    // JSON string
+    [FromForm] string? SalaryComponents,        // JSON string
+    [FromForm] IFormFile? ProfilePicture)
         {
-            if (model == null || model.EmployeeId == null || model.EmployeeId <= 0)
-                return BadRequest(new { status = false, message = "Invalid payload" });
-
             try
             {
-                var saved = await _employeeService.SaveBankDetailsAsync(model);
-                if (saved == null)
-                    return StatusCode(500, new { status = false, message = "Failed to save bank details" });
+                // 🔹 Deserialize payroll JSON
+                EmployeePayrollViewModel? payrollObj = null;
+                if (!string.IsNullOrWhiteSpace(payroll))
+                {
+                    payrollObj = JsonSerializer.Deserialize<EmployeePayrollViewModel>(payroll);
+                }
 
-                return Ok(new { status = true, message = "Bank details saved", data = saved });
+                // 🔹 Deserialize bank JSON
+                EmployeeBankViewModel? bankObj = null;
+                if (!string.IsNullOrWhiteSpace(bank))
+                {
+                    bankObj = JsonSerializer.Deserialize<EmployeeBankViewModel>(bank);
+                }
+
+                // 🔹 Deserialize salary components list
+                List<SalaryComponentViewModel>? salaryComponentsList = null;
+                if (!string.IsNullOrWhiteSpace(SalaryComponents))
+                {
+                    salaryComponentsList = JsonSerializer.Deserialize<List<SalaryComponentViewModel>>(SalaryComponents);
+                }
+
+                // 🔹 Handle profile picture upload
+                string? savedFilePath = null;
+                if (ProfilePicture != null && ProfilePicture.Length > 0)
+                {
+                    var folder = Path.Combine("wwwroot", "uploads", "employees");
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
+
+                    var fileName = $"{Guid.NewGuid()}_{ProfilePicture.FileName}";
+                    var filePath = Path.Combine(folder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ProfilePicture.CopyToAsync(stream);
+                    }
+
+                    savedFilePath = fileName;  // store in DB
+                }
+
+                await _employeeService.SaveAllEmployeeDataAsync(basic, payrollObj, bankObj, salaryComponentsList, savedFilePath);
+
+                return Ok(new
+                {
+                    status = true,
+                    message = "Employee data saved successfully",
+                    profileImage = savedFilePath
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving bank details for employee {EmployeeId}", model.EmployeeId);
-                return StatusCode(500, new { status = false, message = "An error occurred while saving bank details" });
+                return BadRequest(new
+                {
+                    status = false,
+                    message = ex.Message
+                });
             }
         }
+
 
 
     }

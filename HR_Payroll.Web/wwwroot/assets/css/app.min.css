@@ -266,7 +266,11 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
         -ms-flex-align: center;
         align-items: center;
         padding: 16px 0;
-        background-color: #0b51b7;
+        /*background-color: #0b51b7;*/
+        background-image: url('../images/sidebar2.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         height: 100% !important;
         z-index: 1001;
         position: fixed;
@@ -321,7 +325,7 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
                         border: none;
                         position: relative;
                         padding: 0;
-                        color: #fff;
+                        color: #ffffff1f;
                         width: 36px;
                         height: 36px;
                         display: -webkit-box;
@@ -333,13 +337,13 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
                         -webkit-box-pack: center;
                         -ms-flex-pack: center;
                         justify-content: center;
-                        background-color: #1256b9;
+                        background-color: #ffffff1c;
                         border-radius: 5px;
                         font-weight: 500
                     }
 
                         .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link.active, .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link:focus {
-                            background-color: #1256b9;
+                            background-color: #2a8897;
                             border-color: transparent;
                             color: #fff
                         }
@@ -349,7 +353,7 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
                         }
 
                         .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link.active, .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link:active {
-                            color: #0b51b7
+                            color: #ff00d282
                         }
 
                             .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link.active .menu-icon, .leftbar-tab-menu .main-icon-menu .main-icon-menu-body .nav.nav-tabs .nav-link:active .menu-icon {
@@ -402,17 +406,33 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
 .leftbar-tab-menu .main-menu-inner {
     width: 200px;
     height: 100%;
-    background-color: #f8f9fb;
+    background-image: url('../images/navbarside.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border-right: 1px solid #eceff5;
     position: fixed;
     top: 0;
     left: 60px;
-    z-index: 1001;
-    border-right: 1px solid #eceff5
+    z-index: 1; /* parent must be higher than -1 */
+    overflow: hidden;
 }
 
+    /* Frosted blur layer BEHIND the text */
+    .leftbar-tab-menu .main-menu-inner::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.15);
+        z-index: -1; /* move blur background behind text */
+    }
+
+
+
     .leftbar-tab-menu .main-menu-inner .topbar-left {
-        background-color: #f8f9fb;
+       /* background-color: #f8f9fb;*/
         padding-left: 16px
     }
 
@@ -448,7 +468,7 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
 
             .leftbar-tab-menu .main-menu-inner .menu-body .nav-item .nav-link {
                 position: relative;
-                color: #5a5c61;
+                color: #9f9f9f;
                 font-size: 13px;
                 font-weight: 500;
                 display: -webkit-box;
@@ -462,7 +482,7 @@ body.dark-topbar .app-search form .form-control, body.dark-topbar .app-search fo
             }
 
                 .leftbar-tab-menu .main-menu-inner .menu-body .nav-item .nav-link.active, .leftbar-tab-menu .main-menu-inner .menu-body .nav-item .nav-link.active i {
-                    color: #0b51b7
+                    color: #00dcff
                 }
 
         .leftbar-tab-menu .main-menu-inner .menu-body .main-icon-menu-pane {
@@ -1821,7 +1841,7 @@ body {
 }
 
 .h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
-    color: #303e67;
+    color: #bbbfca;
     margin: 10px 0
 }
 
