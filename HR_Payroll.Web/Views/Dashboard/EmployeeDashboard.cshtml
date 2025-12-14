@@ -1,0 +1,292 @@
+﻿@{
+    ViewData["Title"] = "Employee Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .kpi-card {
+        border-radius: 14px;
+        border: none;
+        box-shadow: 0 8px 20px rgba(0,0,0,.06);
+        min-height: 140px;
+    }
+
+    .kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        margin-bottom: 10px;
+        font-size: 20px;
+    }
+
+    .kpi-title {
+        font-size: 13px;
+        color: #6c757d;
+    }
+
+    .kpi-value {
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .kpi-sub {
+        font-size: 12px;
+        color: #8a8f98;
+    }
+
+    .bg-danger {
+        background: linear-gradient(135deg,#ff6b6b,#ee5253);
+    }
+
+    .bg-success {
+        background: linear-gradient(135deg,#1dd1a1,#10ac84);
+    }
+
+    .bg-primary {
+        background: linear-gradient(135deg,#54a0ff,#2e86de);
+    }
+
+    .bg-warning {
+        background: linear-gradient(135deg,#feca57,#ff9f43);
+    }
+
+    .badge {
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+
+    #todayStatusIcon {
+        transition: background 0.3s ease;
+    }
+
+        #todayStatusIcon i {
+            transition: transform 0.3s ease;
+        }
+
+    /* Quick Actions */
+    .quick-action-card {
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .quick-actions {
+        display: grid;
+        gap: 12px;
+    }
+
+    .quick-action-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        color: #fff;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+        .quick-action-item h6 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .quick-action-item small {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+
+    /* Icon box */
+    .qa-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        background: rgba(255,255,255,0.2);
+    }
+
+    /* Hover effect */
+    .quick-action-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+        text-decoration: none;
+    }
+
+    /* Color tweaks */
+    .quick-action-item.bg-light {
+        color: #495057;
+    }
+
+        .quick-action-item.bg-light .qa-icon {
+            background: rgba(0,0,0,0.06);
+        }
+
+</style>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <h4 class="page-title fw-bold">My Dashboard</h4>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="row g-3">
+
+    <div class="col-md-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <div class="kpi-icon bg-danger" id="todayStatusIcon">
+                    <i class="mdi mdi-account-off" id="todayStatusIconI"></i>
+                </div>
+                <div class="kpi-title">Today Status</div>
+                <div id="todayStatus" class="kpi-value text-danger">Not Checked In</div>
+                <div class="kpi-sub">Attendance</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <div class="kpi-icon bg-primary">
+                    <i class="mdi mdi-clock-outline"></i>
+                </div>
+                <div class="kpi-title">Working Hours</div>
+                <div id="todayHours" class="kpi-value">0h 00m</div>
+                <div class="kpi-sub">Today</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <div class="kpi-icon bg-warning">
+                    <i class="mdi mdi-calendar-clock"></i>
+                </div>
+                <div class="kpi-title">Monthly Hours</div>
+                <div id="monthlyHours" class="kpi-value">0h</div>
+                <div class="kpi-sub">This Month</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card">
+            <div class="card-body">
+                <div class="kpi-icon bg-success">
+                    <i class="mdi mdi-beach"></i>
+                </div>
+                <div class="kpi-title">Leave Balance</div>
+                <div id="leaveBalance" class="kpi-value">0</div>
+                <div class="kpi-sub">Remaining</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- CHART + QUICK ACTIONS -->
+<div class="row mt-4">
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Attendance – Last 30 Days
+            </div>
+            <div class="card-body">
+                <div id="employeeAttendanceChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card quick-action-card shadow-sm">
+            <div class="card-header fw-semibold">
+                Quick Actions
+            </div>
+
+            <div class="card-body quick-actions">
+
+                <a href="javascript:void(0);"
+                   id="checkInToggle"
+                   class="quick-action-item bg-success">
+
+                    <div class="qa-icon">
+                        <i class="mdi mdi-login"></i>
+                    </div>
+
+                    <div class="qa-text">
+                        <h6 class="text-white">Check In / Out</h6>
+                        <small>Mark today’s attendance</small>
+                    </div>
+                </a>
+
+
+                <a href="/Payroll/ApplyLeave" class="quick-action-item bg-primary">
+                    <div class="qa-icon">
+                        <i class="mdi mdi-calendar-plus"></i>
+                    </div>
+                    <div class="qa-text">
+                        <h6 class="text-white">Apply Leave</h6>
+                        <small>Request time off</small>
+                    </div>
+                </a>
+
+                <a href="/MarkAttendance/AttendanceData" class="quick-action-item bg-light border">
+                    <div class="qa-icon text-secondary">
+                        <i class="mdi mdi-history"></i>
+                    </div>
+                    <div class="qa-text">
+                        <h6 class="text-secondary">Attendance History</h6>
+                        <small>View past records</small>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- RECENT ATTENDANCE -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Recent Attendance
+            </div>
+            <div class="card-body table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentAttendanceBody">
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                Loading...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Javascript  -->
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/assets/libs/apexcharts/apexcharts.min.js"></script>
+<script src="~/js/dashboard/employee_dashboard.js"></script>

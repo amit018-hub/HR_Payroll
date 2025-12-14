@@ -148,6 +148,123 @@ namespace HR_Payroll.Infrastructure.Concrete
                 };
             }
         }
+
+        public async Task<Result<EmployeeDashboardViewModel>> GetEmployeeDashboardData(int employeeId)
+        {
+            var dashboardData = new EmployeeDashboardViewModel
+            {
+                AttendanceChart = new List<EmployeeAttendanceChartData>(),
+                RecentAttendance = new List<EmployeeRecentAttendanceData>()
+            };
+
+            try
+            {
+                using (var conn = _context.Database.GetDbConnection())
+                {
+                    if (conn.State != ConnectionState.Open)
+                        await conn.OpenAsync();
+
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "sp_Employee_DashboardData";
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        var param = cmd.CreateParameter();
+                        param.ParameterName = "@EmployeeID";
+                        param.Value = employeeId;
+                        cmd.Parameters.Add(param);
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            /* =================================================
+                               1️⃣ Employee Basic Info (Optional – skip)
+                               ================================================= */
+                            await reader.NextResultAsync();
+
+                            /* =================================================
+                               2️⃣ Today Attendance Status
+                               ================================================= */
+                            if (await reader.ReadAsync())
+                                dashboardData.TodayStatus = reader["TodayStatus"]?.ToString() ?? "Absent";
+
+                            /* =================================================
+                               3️⃣ Today Working Hours
+                               ================================================= */
+                            if (await reader.NextResultAsync() && await reader.ReadAsync())
+                                dashboardData.TodayWorkingHours = reader[0]?.ToString() ?? "0h 00m";
+
+                            /* =================================================
+                               4️⃣ Monthly Working Hours
+                               ================================================= */
+                            if (await reader.NextResultAsync() && await reader.ReadAsync())
+                                dashboardData.MonthlyWorkingHours = reader[0]?.ToString() ?? "0h";
+
+                            /* =================================================
+                               5️⃣ Leave Taken (Year)
+                               ================================================= */
+                            if (await reader.NextResultAsync() && await reader.ReadAsync())
+                                dashboardData.LeaveTaken = Convert.ToInt32(reader["LeaveTaken"]);
+
+                            /* =================================================
+                               6️⃣ Attendance Chart (Last 30 Days)
+                               ================================================= */
+                            if (await reader.NextResultAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    dashboardData.AttendanceChart.Add(new EmployeeAttendanceChartData
+                                    {
+                                        AttDate = Convert.ToDateTime(reader["AttDate"]).ToString("yyyy-MM-dd"),
+                                        IsPresent = Convert.ToInt32(reader["IsPresent"])
+                                    });
+                                }
+                            }
+
+                            /* =================================================
+                               7️⃣ Leave Type Summary (Not used in UI – skip)
+                               ================================================= */
+                            await reader.NextResultAsync();
+
+                            /* =================================================
+                               8️⃣ Recent Attendance
+                               ================================================= */
+                            if (await reader.NextResultAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    dashboardData.RecentAttendance.Add(new EmployeeRecentAttendanceData
+                                    {
+                                        Date = Convert.ToDateTime(reader["Date"]).ToString("dd MMM yyyy"),
+                                        CheckIn = reader["CheckIn"]?.ToString() ?? "-",
+                                        CheckOut = reader["CheckOut"]?.ToString() ?? "-",
+                                        Status = reader["Status"]?.ToString() ?? "N/A"
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return new Result<EmployeeDashboardViewModel>
+                {
+                    Entity = dashboardData,
+                    IsSuccess = true,
+                    Message = "Employee dashboard data loaded"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Employee dashboard loading failed");
+
+                return new Result<EmployeeDashboardViewModel>
+                {
+                    Entity = new EmployeeDashboardViewModel(),
+                    IsSuccess = false,
+                    Message = "Failed: " + ex.Message
+                };
+            }
+        }
+
     }
 
 }

@@ -304,7 +304,7 @@ function loadAttendanceModal(attendanceDate) {
                 html += `
                     <tr>
                         <td>${actionBadge}</td>
-                        <td>${h.actionTime}</td>
+                        <td>${formatDateTimeAMPM(h.actionTime)}</td>
                         <td>${h.address}</td>
                         <td>
                             ${geoBadge}<br>
@@ -329,3 +329,21 @@ function loadAttendanceModal(attendanceDate) {
     });
 }
 
+function formatDateTimeAMPM(dateStr) {
+
+    if (!dateStr) return '-';
+
+    // Ensure valid ISO string
+    const dt = new Date(dateStr);
+
+    if (isNaN(dt)) return '-';
+
+    return dt.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}

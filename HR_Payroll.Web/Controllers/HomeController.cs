@@ -126,11 +126,32 @@ namespace HR_Payroll.Web.Controllers
 
                     _logger.LogInformation("User {User} logged in successfully", model.Username);
 
+                    // After successful SignInUserWithJwt(...)
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwtToken = handler.ReadJwtToken(tokenData.accessToken);
+
+                    var role = jwtToken.Claims
+                        .FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")
+                        ?.Value ?? "Employee";
+
+                    string redirectUrl;
+
+                    // 🔐 ROLE BASED ROUTING
+                    if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                        || role.Equals("HR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        redirectUrl = Url.Action("AdminDashboard", "Dashboard");
+                    }
+                    else
+                    {
+                        redirectUrl = Url.Action("EmployeeDashboard", "Dashboard");
+                    }
+
                     return Json(new
                     {
                         success = true,
                         message = "Login successful",
-                        redirectUrl = Url.Action("AdminDashboard", "Dashboard")
+                        redirectUrl = redirectUrl
                     });
                 }
 

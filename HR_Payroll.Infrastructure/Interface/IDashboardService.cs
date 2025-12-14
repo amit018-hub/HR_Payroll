@@ -11,5 +11,6 @@ namespace HR_Payroll.Infrastructure.Interface
     public interface IDashboardService
     {
         Task<Result<DashboardViewModel>> GetAdminDashboardData();
+        Task<Result<EmployeeDashboardViewModel>> GetEmployeeDashboardData(int employeeId);
     }
 }

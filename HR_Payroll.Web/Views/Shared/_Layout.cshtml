@@ -67,31 +67,36 @@
                                 <i class="ti ti-smart-home menu-icon"></i>
                             </a><!--end nav-link-->
                         </li><!--end nav-item-->
-                        @if (userTypeId==1)
+                        @if (userTypeId == 1)
                         {
                             <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Master" data-bs-trigger="hover">
                                 <a href="#DrctsMaster" id="apps-tab" class="nav-link">
                                     <i class="ti ti-apps menu-icon"></i>
                                 </a><!--end nav-link-->
                             </li> <!--end nav-item-->
-                        }             
-                        <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendance" data-bs-trigger="hover">
-                            <a href="#DrctsAttendance" id="uikit-tab" class="nav-link">
-                                <i class="ti ti-files menu-icon"></i>
-                            </a><!--end nav-link-->
-                        </li><!--end nav-item-->
+                        }
+                        else
+                        {
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendance" data-bs-trigger="hover">
+                                <a href="#DrctsAttendance" id="uikit-tab" class="nav-link">
+                                    <i class="ti ti-files menu-icon"></i>
+                                </a><!--end nav-link-->
+                            </li><!--end nav-item-->
 
-                        <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Payroll" data-bs-trigger="hover">
-                            <a href="#DrctsPayroll" id="pages-tab" class="nav-link">
-                                <i class="ti ti-shield-lock menu-icon"></i>
-                            </a><!--end nav-link-->
-                        </li><!--end nav-item-->
-
-                        <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Report" data-bs-trigger="hover">
-                            <a href="#MetricaAuthentication" id="authentication-tab" class="nav-link">
-                                <i class="ti ti-report-analytics menu-icon"></i>
-                            </a><!--end nav-link-->
-                        </li><!--end nav-item-->
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Payroll" data-bs-trigger="hover">
+                                <a href="#DrctsPayroll" id="pages-tab" class="nav-link">
+                                    <i class="ti ti-shield-lock menu-icon"></i>
+                                </a><!--end nav-link-->
+                            </li><!--end nav-item-->
+                        }
+                        @if (userTypeId == 1)
+                        {
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Report" data-bs-trigger="hover">
+                                <a href="#MetricaAuthentication" id="authentication-tab" class="nav-link">
+                                    <i class="ti ti-report-analytics menu-icon"></i>
+                                </a><!--end nav-link-->
+                            </li><!--end nav-item-->
+                        }
                     </ul><!--end nav-->
                 </div><!--end /div-->
             </div><!--end main-icon-menu-body-->
@@ -123,7 +128,14 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" asp-action="AdminDashboard" asp-controller="Dashboard">Dashboard Analytics</a>
+                            @if (userTypeId == 1)
+                            {             
+                                <a class="nav-link" asp-action="AdminDashboard" asp-controller="Dashboard">Dashboard Analytics</a>
+                            }
+                            else
+                            {
+                                <a class="nav-link" asp-action="EmployeeDashboard" asp-controller="Dashboard">Dashboard Analytics</a>                       
+                            }
                         </li><!--end nav-item-->
                     </ul><!--end nav-->
                 </div><!-- end Dashboards -->
@@ -133,17 +145,17 @@
                         <div class="title-box">
                             <h6 class="menu-title">Master</h6>
                         </div>
-                         <div class="collapse navbar-collapse" id="sidebarCollapse">
+                        <div class="collapse navbar-collapse" id="sidebarCollapse">
                             <ul class="navbar-nav">
                                 <li class="nav-item">
                                     <a class="nav-link" href="#sidebarAnalytics" data-bs-toggle="collapse" role="button"
-                                        aria-expanded="false" aria-controls="sidebarAnalytics">
+                                    aria-expanded="false" aria-controls="sidebarAnalytics">
                                         Shift & Location Master
                                     </a>
                                     <div class="collapse " id="sidebarAnalytics">
                                         <ul class="nav flex-column">
                                             <li class="nav-item">
-                                               <a class="nav-link" asp-action="#" asp-controller="Master">Office Location</a>
+                                                <a class="nav-link" asp-action="#" asp-controller="Master">Office Location</a>
                                             </li><!--end nav-item-->
                                             <li class="nav-item">
                                                 <a class="nav-link" asp-action="#" asp-controller="Master">Shift Master</a>
@@ -153,7 +165,7 @@
                                 </li><!--end nav-item-->
                                 <li class="nav-item">
                                     <a class="nav-link" href="#sidebarCrypto" data-bs-toggle="collapse" role="button"
-                                        aria-expanded="false" aria-controls="sidebarCrypto">
+                                    aria-expanded="false" aria-controls="sidebarCrypto">
                                         Assign Department
                                     </a>
                                     <div class="collapse " id="sidebarCrypto">
@@ -174,26 +186,29 @@
                         </div><!--end sidebarCollapse-->
 
                         <ul class="nav flex-column">                         
-                             <li class="nav-item">
+                            <li class="nav-item">
                                 <a class="nav-link" asp-action="EmployeeMaster" asp-controller="Employee">Employee Master</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
                     </div><!-- end Master -->
                 }
-                <div id="DrctsAttendance" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="uikit-tab">
-                     <div class="title-box">
-                         <h6 class="menu-title">Attendance</h6>
-                     </div>
+                else
+                {
+                    <div id="DrctsAttendance" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="uikit-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Attendance</h6>
+                        </div>
 
-                     <ul class="nav flex-column">
-                         <li class="nav-item">
-                             <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calender</a>
-                         </li><!--end nav-item-->
-                         <li class="nav-item">
-                             <a class="nav-link" asp-action="AttendanceData" asp-controller="MarkAttendance">Attendance Data</a>
-                         </li><!--end nav-item-->
-                     </ul><!--end nav-->
-                 </div><!-- end Attendance -->
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calender</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceData" asp-controller="MarkAttendance">Attendance Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div><!-- end Attendance -->
+                }
                 @if (userTypeId != 1)
                 {
                     <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
@@ -211,17 +226,20 @@
                         </ul><!--end nav-->
                     </div><!-- end Payroll -->
                 }
-                <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
-                     <div class="title-box">
-                         <h6 class="menu-title">Report</h6>
-                     </div>
+                @if (userTypeId == 1)
+                {
+                    <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Report</h6>
+                        </div>
 
-                     <ul class="nav flex-column">
-                         <li class="nav-item">
-                             <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
-                         </li><!--end nav-item-->
-                     </ul><!--end nav-->
-                 </div><!-- end Report -->
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div><!-- end Report -->
+                }
             </div>
             <!--end menu-body-->
         </div><!-- end main-menu-inner-->
@@ -459,7 +477,17 @@
 
 <!-- DATA TABLE LIBRARIES -->
 <script src="~/assets/js/jquery.datatables.min.js"></script>
-<script src="~/assets/libs/tabulator-tables/js/tabulator.min.js"></script>
+<script src="~/assets/libs/tabulator-tables/js/tabulator.min.js"></script><!-- Buttons extension -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+<!-- CSV / Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
 
 <!-- CALENDAR LIBRARY -->
 <script src="~/assets/libs/fullcalendar/main.min.js"></script>
