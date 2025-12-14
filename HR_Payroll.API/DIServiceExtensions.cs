@@ -2,9 +2,7 @@
 using HR_Payroll.API.JWTExtension;
 using HR_Payroll.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -18,8 +16,7 @@ namespace HR_Payroll.API
 
         public static WebApplication ConfigureServices(this WebApplicationBuilder builder)
         {
-            // Configure DbContext with SQL Server and advanced options
-            // Context 1: For EF Core operations(with tracking)
+            // 1. Configure DbContext with SQL Server
             builder.Services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseSqlServer(
@@ -34,42 +31,57 @@ namespace HR_Payroll.API
                         sqlServerOptions.CommandTimeout(30);
                     }
                 );
-                // ✅ Keep tracking enabled for EF Core operations
             });
 
-            // configure authentication to use IdentityServer
-            var identityServerSettings = builder.Configuration.GetSection("JwtIdentitySetting").Get<JwtIdentitySetting>();
-            builder.Services.Configure<JwtIdentitySetting>(builder.Configuration.GetSection(JwtIdentitySetting));
+            // 2. Configure JWT Identity Settings with validation
+            var identityServerSettings = builder.Configuration
+                .GetSection(JwtIdentitySetting)
+                .Get<JwtIdentitySetting>();
 
-            // add the configuration settings to the dependency injection container
+            if (identityServerSettings == null)
+            {
+                throw new InvalidOperationException(
+                    $"Configuration section '{JwtIdentitySetting}' is missing or invalid.");
+            }
+
+            if (string.IsNullOrEmpty(identityServerSettings.Secret))
+            {
+                throw new InvalidOperationException("JWT Secret is not configured.");
+            }
+
+            builder.Services.Configure<JwtIdentitySetting>(
+                builder.Configuration.GetSection(JwtIdentitySetting));
             builder.Services.AddSingleton(identityServerSettings);
 
+            // 3. Add Core Services
             builder.Services.AddHttpContextAccessor();
-
-            //builder.Services.AddControllers().AddNewtonsoftJson(options =>{options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;});
-            builder.Services.AddControllers().AddNewtonsoftJson();
-
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
             builder.Services.ConfigureDIServices();
 
-            builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, builder => builder.WithOrigins(identityServerSettings.AllowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+            // 4. Configure CORS
             //builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
-            
-            // Add Authorization Policies
-            // builder.Services.ConfigureAuthorizationPolicies();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicy, policy =>
+                {
+                    policy.WithOrigins(identityServerSettings.AllowedOrigins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // Add if using cookies/credentials
+                });
+            });
 
-
-            // Add Authentication
+            // 5. Configure JWT Authentication
             var key = Encoding.UTF8.GetBytes(identityServerSettings.Secret);
 
-            builder.Services.AddAuthentication(x =>
+            builder.Services.AddAuthentication(options =>
             {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(x =>
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
             {
-                x.TokenValidationParameters = new TokenValidationParameters
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidIssuer = identityServerSettings.Issuer,
@@ -77,128 +89,123 @@ namespace HR_Payroll.API
                     ValidAudience = identityServerSettings.Audience,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateLifetime = true, // Ensures token expiration is checked
+                    ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero // Remove default 5-minute tolerance
                 };
 
-                // Optional: add events for debugging / refresh handling
-                x.Events = new JwtBearerEvents
+                options.Events = new JwtBearerEvents
                 {
                     OnAuthenticationFailed = context =>
                     {
-                        if (context.Exception is SecurityTokenExpiredException)
-                        {
-                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                            context.Response.ContentType = "application/json";
-
-                            var response = new
-                            {
-                                status = false,
-                                message = "Token expired. Please login again."
-                            };
-
-                            var json = System.Text.Json.JsonSerializer.Serialize(response);
-                            return context.Response.WriteAsync(json);
-                        }
-
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
 
-                        var invalid = new
-                        {
-                            status = false,
-                            message = "Invalid token."
-                        };
+                        var message = context.Exception is SecurityTokenExpiredException
+                            ? "Token expired. Please login again."
+                            : "Invalid token.";
 
-                        var invalidJson = System.Text.Json.JsonSerializer.Serialize(invalid);
-                        return context.Response.WriteAsync(invalidJson);
+                        var response = new { status = false, message };
+                        var json = System.Text.Json.JsonSerializer.Serialize(response);
+                        
+                        return context.Response.WriteAsync(json);
                     },
                     OnChallenge = context =>
                     {
-                        //context.HandleResponse(); // Prevents the default 401 redirect
-
+                        context.HandleResponse();
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
 
-                        var response = new ErrorResponse
-                        {
-                            status = false,
-                            message = "Unauthorized access"
-                        };
-
-                        return context.Response.WriteAsync(response.ToString());
+                        var response = new { status = false, message = "Unauthorized access" };
+                        var json = System.Text.Json.JsonSerializer.Serialize(response);
+                        
+                        return context.Response.WriteAsync(json);
                     },
                     OnForbidden = context =>
                     {
                         context.Response.StatusCode = StatusCodes.Status403Forbidden;
                         context.Response.ContentType = "application/json";
 
-                        var response = new ErrorResponse
-                        {
-                            status = false,
-                            message = "Forbidden"
-                        };
-
-                        return context.Response.WriteAsync(response.ToString());
+                        var response = new { status = false, message = "Forbidden" };
+                        var json = System.Text.Json.JsonSerializer.Serialize(response);
+                        
+                        return context.Response.WriteAsync(json);
                     }
                 };
             });
-     
+
             builder.Services.AddAuthorization();
 
-            // Basic essential services first
+            // 6. Add Controllers and API Documentation
+            //builder.Services.AddControllers().AddNewtonsoftJson(options =>{options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;});
             builder.Services.AddControllers().AddNewtonsoftJson();
-
             builder.Services.AddEndpointsApiExplorer();
-
-            // builder.Services.AddSwaggerGen();
-            RegisterDocumentationGenerators(builder.Services);
+            RegisterSwaggerDocumentation(builder.Services);
 
             return builder.Build();
         }
 
         public static WebApplication ConfigurePipeline(this WebApplication app)
         {
+            // 1. Development-only middleware
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "DRCTS Payroll API v1");
+                });
             }
 
+            // 2. Global exception handler (before other middleware)
+            app.ConfigureExceptionHandler();
+
+            // 3. HTTPS Redirection
             app.UseHttpsRedirection();
-            app.UseRouting();
+
+            // 4. Static Files
             app.UseStaticFiles();
+
+            // 5. Routing
+            app.UseRouting();
+
+            // 6. CORS (must be after UseRouting and before UseAuthentication)
             app.UseCors(CorsPolicy);
+
+            // 7. Authentication & Authorization
             app.UseAuthentication();
             app.UseAuthorization();
-            app.ConfigureRedundantStatusCodePages(); // Provide JSON responses for standard response codes such as HTTP 401.
-            app.ConfigureExceptionHandler();
+
+            // 8. Custom status code pages
+            app.ConfigureRedundantStatusCodePages();
             //app.UseHttpContextHelper(); // Helper to get Base URL anywhere in application
             //InitializeRoles(app.Services).Wait();
             //InitializeUser(app.Services).Wait();
-            app.UseEndpoints(endpoints =>
-            {
-                _=endpoints.MapDefaultControllerRoute();
-            });
 
-            // Add diagnostic middleware
-            app.Use(async (context, next) =>
-            {
-                try
-                {
-                    Console.WriteLine($"Incoming request to: {context.Request.Path}");
-                    await next();
-                    Console.WriteLine($"Response status code: {context.Response.StatusCode}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error processing request: {ex.Message}");
-                    throw;
-                }
-            });
 
-            app.UseRouting();
+            // 9. Diagnostic middleware (development only)
+            if (app.Environment.IsDevelopment())
+            {
+                app.Use(async (context, next) =>
+                {
+                    var startTime = DateTime.UtcNow;
+                    Console.WriteLine($"[{startTime:HH:mm:ss}] Request: {context.Request.Method} {context.Request.Path}");
+                    
+                    try
+                    {
+                        await next();
+                        var duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                        Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Response: {context.Response.StatusCode} ({duration}ms)");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[ERROR] {ex.Message}");
+                        throw;
+                    }
+                });
+            }
+
+            // 10. Map Controllers
             app.UseEndpoints(endpoints =>
             {
                 _ = endpoints.MapControllers();
@@ -207,42 +214,47 @@ namespace HR_Payroll.API
             return app;
         }
 
-        private static void RegisterDocumentationGenerators(IServiceCollection services)
+        private static void RegisterSwaggerDocumentation(IServiceCollection services)
         {
             services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
-                    Title = "DRCTS_Payroll.API",
-                    Description = "An ASP.NET Core Web API for managing DORMS.Api items"
+                    Title = "DRCTS Payroll API",
+                    Description = "ASP.NET Core Web API for managing HR and Payroll operations",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Support Team",
+                        Email = "support@drcts.com"
+                    }
                 });
+
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Please enter a valid token",
+                    Description = "Enter 'Bearer' [space] and then your valid token",
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
                     BearerFormat = "JWT",
                     Scheme = "Bearer"
                 });
+
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
                         new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
                             {
-                                Reference = new OpenApiReference
-                                {
-                                    Type=ReferenceType.SecurityScheme,
-                                    Id="Bearer"
-                                }
-                            },
-                        new string[]{}
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
                     }
                 });
-
             });
         }
-
     }
 }

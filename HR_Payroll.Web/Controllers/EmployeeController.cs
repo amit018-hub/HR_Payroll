@@ -181,12 +181,8 @@ namespace HR_Payroll.Web.Controllers
             }
         }
         [HttpPost]
-        public async Task<JsonResult> SaveAllEmployeeData(
-      [FromForm] EmployeeBasicInfoViewModel basic,
-      [FromForm] EmployeePayrollViewModel payroll,
-      [FromForm] EmployeeBankViewModel bank,
-      [FromForm] string SalaryComponents,  // JSON from UI
-      [FromForm] IFormFile? ProfilePicture)
+        public async Task<JsonResult> SaveAllEmployeeData([FromForm] EmployeeBasicInfoViewModel basic, [FromForm] EmployeePayrollViewModel payroll,
+               [FromForm] EmployeeBankViewModel bank, [FromForm] string SalaryComponents, [FromForm] IFormFile? ProfilePicture)
         {
             try
             {
