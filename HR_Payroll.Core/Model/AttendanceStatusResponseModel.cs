@@ -42,6 +42,13 @@ namespace HR_Payroll.Core.Model
         public decimal WorkingHours { get; set; }
         public int ElapsedSeconds { get; set; }
 
+        // Leave Details
+        public int? LeaveId { get; set; }
+        public int? LeaveTypeId { get; set; }
+        public string? LeaveTypeName { get; set; }
+        public string? LeaveStatus { get; set; }
+        public bool? IsOnLeave { get; set; }
+
         // Status Flags
         public bool IsCheckedIn { get; set; }
         public bool IsCheckedOut { get; set; }

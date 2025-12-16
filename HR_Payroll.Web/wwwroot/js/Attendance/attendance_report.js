@@ -3,6 +3,13 @@
 $(document).ready(function () {
     initAttendanceTable();
 
+    // Refresh button
+    $('#refreshData').on('click', function () {
+        if (table) {
+            table.ajax.reload(null, false); // keep current page
+        }
+    });
+
     // Filter button click
     $('#filterBtn').on('click', function () {
         table.ajax.reload();

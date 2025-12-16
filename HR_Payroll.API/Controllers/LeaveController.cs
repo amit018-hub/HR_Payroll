@@ -159,6 +159,16 @@ namespace HR_Payroll.API.Controllers
         {
             try
             {
+                if (leaveId <= 0)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = "Invalid Leave ID",
+                        data = new List<object>()
+                    });
+                }
+
                 var result = await _leaveservice.GetLeaveRequestById(leaveId);
 
                 if (!result.IsSuccess)

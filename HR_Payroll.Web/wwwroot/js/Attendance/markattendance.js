@@ -207,6 +207,9 @@ function handleAttendanceStatusResponse(response) {
         case 'NOT_CHECKED_IN':
             showDropdown();
             break;
+        case 'ON_LEAVE':
+            hideDropdown();
+            break;
         default:
             resetAttendanceUI();
             break;
@@ -399,12 +402,15 @@ async function punchIn() {
     try {    
         $('.loader').removeClass('hide');
         // Get all required data in parallel for better performance
-        const [locationData, ip] = await Promise.all([
-            getCurrentLocation(),
-            getIpAddress()
-        ]);
+        //const [locationData, ip] = await Promise.all([
+        //    getCurrentLocation(),
+        //    getIpAddress()
+        //]);
 
-        const { latitude, longitude } = locationData;
+        //const { latitude, longitude } = locationData;
+        var ip = getIpAddress();
+        var latitude = "20.294518";
+        var longitude = "85.827507";
         const address = await getAddressFromCoords(latitude, longitude);
 
         const formData = new FormData();
@@ -465,12 +471,16 @@ async function punchOut() {
     try {
         $('.loader').removeClass('hide');
         // Get all required data in parallel
-        const [locationData, ip] = await Promise.all([
-            getCurrentLocation(),
-            getIpAddress()
-        ]);
+        //const [locationData, ip] = await Promise.all([
+        //    getCurrentLocation(),
+        //    getIpAddress()
+        //]);
 
-        const { latitude, longitude } = locationData;
+        //const { latitude, longitude } = locationData;
+        var ip = getIpAddress();
+        var latitude = "20.294518";
+        var longitude = "85.827507";
+
         const address = await getAddressFromCoords(latitude, longitude);
 
         const formData = new FormData();

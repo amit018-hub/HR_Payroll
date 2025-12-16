@@ -1,25 +1,38 @@
 ﻿$(function () {
+    loadEmployeeDashboard();
+});
+
+/* =========================
+   LOAD DASHBOARD DATA
+   ========================= */
+
+$(document).on("click", "#refreshDashboard", function () {
+    loadEmployeeDashboard();
+});
+
+function loadEmployeeDashboard() {
 
     $.ajax({
         url: "/Dashboard/GetEmployeeDashboard",
         type: "GET",
+        beforeSend: function () {
+            $("#refreshDashboard i").addClass("mdi-spin");
+        },
         success: function (res) {
 
             /* =========================
-               KPI CARDS (FIXED LOGIC)
+               KPI CARDS
                ========================= */
 
-            const status = res.todayStatus && res.todayStatus.trim() !== ""
-                ? res.todayStatus
+            const status = res.data.todayStatus && res.data.todayStatus.trim() !== ""
+                ? res.data.todayStatus
                 : "Absent";
 
-            // Default values
             let statusText = "Not Checked In";
             let statusColor = "bg-danger";
             let statusTextClass = "text-danger";
             let statusIcon = "mdi-account-off";
 
-            // Status mapping
             if (status === "Present") {
                 statusText = "Present";
                 statusColor = "bg-success";
@@ -39,13 +52,11 @@
                 statusIcon = "mdi-beach";
             }
 
-            // Apply text
             $("#todayStatus")
                 .text(statusText)
                 .removeClass("text-success text-danger text-info text-warning")
                 .addClass(statusTextClass);
 
-            // Apply icon + color
             $("#todayStatusIcon")
                 .removeClass("bg-success bg-danger bg-primary bg-warning")
                 .addClass(statusColor);
@@ -54,16 +65,15 @@
                 .removeClass()
                 .addClass(`mdi ${statusIcon}`);
 
-            // Working hours
             $("#todayHours").text(
-                status === "Absent" ? "0h 00m" : (res.todayWorkingHours || "0h 00m")
+                status === "Absent" ? "0h 00m" : (res.data.todayWorkingHours || "0h 00m")
             );
 
             $("#monthlyHours").text(res.data.monthlyWorkingHours || "0h");
             $("#leaveBalance").text(res.data.leaveTaken ?? 0);
 
             /* =========================
-               ATTENDANCE CHART (30 DAYS)
+               CHART
                ========================= */
 
             let dates = [];
@@ -76,7 +86,6 @@
                 });
             }
 
-            // Destroy old chart if exists
             if (window.employeeAttendanceChartObj) {
                 window.employeeAttendanceChartObj.destroy();
             }
@@ -84,23 +93,11 @@
             window.employeeAttendanceChartObj = new ApexCharts(
                 document.querySelector("#employeeAttendanceChart"),
                 {
-                    chart: {
-                        type: "area",
-                        height: 300,
-                        toolbar: { show: false }
-                    },
-                    series: [{
-                        name: "Present",
-                        data: presentData
-                    }],
-                    xaxis: {
-                        categories: dates
-                    },
+                    chart: { type: "area", height: 300, toolbar: { show: false } },
+                    series: [{ name: "Present", data: presentData }],
+                    xaxis: { categories: dates },
                     colors: ["#0d6efd"],
-                    stroke: {
-                        curve: "smooth",
-                        width: 2
-                    },
+                    stroke: { curve: "smooth", width: 2 },
                     dataLabels: { enabled: false },
                     grid: { strokeDashArray: 4 }
                 }
@@ -109,7 +106,7 @@
             window.employeeAttendanceChartObj.render();
 
             /* =========================
-               RECENT ATTENDANCE TABLE
+               RECENT ATTENDANCE
                ========================= */
 
             let rows = "";
@@ -119,7 +116,6 @@
                 res.data.recentAttendance.forEach(x => {
 
                     let badgeClass = "secondary";
-
                     if (x.status === "Present") badgeClass = "success";
                     else if (x.status === "Absent") badgeClass = "danger";
                     else if (x.status === "WFH") badgeClass = "info";
@@ -148,6 +144,9 @@
 
             $("#recentAttendanceBody").html(rows);
         },
+        complete: function () {
+            $("#refreshDashboard i").removeClass("mdi-spin");
+        },
         error: function () {
             console.error("Failed to load employee dashboard data.");
             $("#recentAttendanceBody").html(`
@@ -159,9 +158,7 @@
             `);
         }
     });
-
-});
-
+}
 
 // Toggle dropdown on button click
 document.addEventListener("DOMContentLoaded", function () {

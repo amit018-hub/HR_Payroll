@@ -130,12 +130,26 @@
 
 </style>
 
-<div class="row mb-3">
-    <div class="col-12">
-        <h4 class="page-title fw-bold">My Dashboard</h4>
-    </div>
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="#">DRCTS</a>
+                    </li><!--end nav-item-->
+                    <li class="breadcrumb-item">
+                        <a href="#">Dashboard</a>
+                    </li><!--end nav-item-->
+                    <li class="breadcrumb-item active">Analytics Dashboard </li>
+                </ol>
+            </div>
+            <h4 class="page-title">Analytics</h4>
+        </div><!--end page-title-box-->
+    </div><!--end col-->
 </div>
-
+<!-- end page title end breadcrumb -->
 <!-- KPI CARDS -->
 <div class="row g-3">
 
@@ -184,9 +198,9 @@
                 <div class="kpi-icon bg-success">
                     <i class="mdi mdi-beach"></i>
                 </div>
-                <div class="kpi-title">Leave Balance</div>
+                <div class="kpi-title">Leave Taken</div>
                 <div id="leaveBalance" class="kpi-value">0</div>
-                <div class="kpi-sub">Remaining</div>
+                <div class="kpi-sub">This Year</div>
             </div>
         </div>
     </div>
@@ -260,9 +274,19 @@
 <div class="row mt-4">
     <div class="col-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                Recent Attendance
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h4 class="card-title">Recent Attendance</h4>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-outline-primary" id="refreshDashboard">
+                            <i class="mdi mdi-refresh"></i> Refresh
+                        </button>
+                    </div>
+                </div>
             </div>
+
             <div class="card-body table-responsive">
                 <table class="table table-sm align-middle">
                     <thead class="table-light">
