@@ -58,8 +58,6 @@ namespace HR_Payroll.Core.Models
         public string?   ESINo { get; set; }
 
         public int? NoticePeriod { get; set; }
-
-        // File
-        public IFormFile? ProfilePicture { get; set; }
+        public string? CreatedBy { get; set; }
     }
 }

@@ -110,14 +110,14 @@ namespace HR_Payroll.Web.Controllers
                 multipart.Add(new StringContent(model.ESINo ?? ""), "ESINo");
                 multipart.Add(new StringContent(model.NoticePeriod?.ToString() ?? ""), "NoticePeriod");
 
-                if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
-                {
-                    var stream = model.ProfilePicture.OpenReadStream();
-                    var streamContent = new StreamContent(stream);
-                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(model.ProfilePicture.ContentType ?? "application/octet-stream");
+                //if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+                //{
+                //    var stream = model.ProfilePicture.OpenReadStream();
+                //    var streamContent = new StreamContent(stream);
+                //    streamContent.Headers.ContentType = new MediaTypeHeaderValue(model.ProfilePicture.ContentType ?? "application/octet-stream");
 
-                    multipart.Add(streamContent, "ProfilePicture", model.ProfilePicture.FileName);
-                }
+                //    multipart.Add(streamContent, "ProfilePicture", model.ProfilePicture.FileName);
+                //}
 
                 var response = await client.PostAsync($"{_apiBaseUrl}Employee/SaveBasicInfo", multipart);
 
@@ -181,57 +181,61 @@ namespace HR_Payroll.Web.Controllers
             }
         }
         [HttpPost]
-        public async Task<JsonResult> SaveAllEmployeeData([FromForm] EmployeeBasicInfoViewModel basic, [FromForm] EmployeePayrollViewModel payroll,
-               [FromForm] EmployeeBankViewModel bank, [FromForm] string SalaryComponents, [FromForm] IFormFile? ProfilePicture)
+        public async Task<JsonResult> SaveAllEmployeeData( EmployeeBasicInfoViewModel basic, EmployeePayrollViewModel payroll, EmployeeBankViewModel bank, string SalaryComponents, IFormFile? ProfilePicture)
         {
             try
             {
                 var client = _httpClientFactory.CreateClient();
                 using var multipart = new MultipartFormDataContent();
 
-                // Append Basic Properties (flat)
-                foreach (var prop in basic.GetType().GetProperties())
-                {
-                    var value = prop.GetValue(basic)?.ToString() ?? "";
-                    multipart.Add(new StringContent(value), prop.Name);
-                }
+                multipart.Add(
+                    new StringContent(JsonSerializer.Serialize(basic), Encoding.UTF8, "application/json"),
+                    "Basic"
+                );
 
-                // Append Payroll Properties (flat)
-                foreach (var prop in payroll.GetType().GetProperties())
-                {
-                    var value = prop.GetValue(payroll)?.ToString() ?? "";
-                    multipart.Add(new StringContent(value), prop.Name);
-                }
+                multipart.Add(
+                    new StringContent(JsonSerializer.Serialize(payroll), Encoding.UTF8, "application/json"),
+                    "Payroll"
+                );
 
-                // Append Bank Properties (flat)
-                foreach (var prop in bank.GetType().GetProperties())
-                {
-                    var value = prop.GetValue(bank)?.ToString() ?? "";
-                    multipart.Add(new StringContent(value), prop.Name);
-                }
+                multipart.Add(
+                    new StringContent(JsonSerializer.Serialize(bank), Encoding.UTF8, "application/json"),
+                    "Bank"
+                );
 
-                // Salary Components JSON
-                multipart.Add(new StringContent(SalaryComponents, Encoding.UTF8, "application/json"), "SalaryComponents");
+                multipart.Add(
+                    new StringContent(SalaryComponents, Encoding.UTF8, "application/json"),
+                    "SalaryComponents"
+                );
 
-                // Profile Picture
                 if (ProfilePicture != null && ProfilePicture.Length > 0)
                 {
-                    var streamContent = new StreamContent(ProfilePicture.OpenReadStream());
-                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(ProfilePicture.ContentType);
-                    multipart.Add(streamContent, "ProfilePicture", ProfilePicture.FileName);
+                    var fileContent = new StreamContent(ProfilePicture.OpenReadStream());
+                    fileContent.Headers.ContentType =
+                        new MediaTypeHeaderValue(ProfilePicture.ContentType);
+
+                    multipart.Add(fileContent, "ProfilePicture", ProfilePicture.FileName);
                 }
 
-                // Send to API
-                var response = await client.PostAsync($"{_apiBaseUrl}Employee/SaveAllEmployeeData", multipart);
-                var content = await response.Content.ReadAsStringAsync();
+                var response = await client.PostAsync(
+                    $"{_apiBaseUrl}Employee/SaveAllEmployeeData",
+                    multipart
+                );
 
-                return Json(new { status = response.IsSuccessStatusCode, response = content });
+                var result = await response.Content.ReadAsStringAsync();
+
+                return Json(new
+                {
+                    status = response.IsSuccessStatusCode,
+                    response = result
+                });
             }
             catch (Exception ex)
             {
                 return Json(new { status = false, error = ex.Message });
             }
         }
+
 
 
     }

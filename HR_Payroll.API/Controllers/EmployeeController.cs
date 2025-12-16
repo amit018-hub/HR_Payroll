@@ -4,6 +4,7 @@ using HR_Payroll.Core.Models;
 using HR_Payroll.Infrastructure.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Text.Json;
 
 namespace HR_Payroll.API.Controllers
@@ -25,98 +26,85 @@ namespace HR_Payroll.API.Controllers
             _employeeService = employeeService;
             _env = env;
         }
-        //[HttpPost]
-        //[Route("SaveBasicInfo")]
-        //public async Task<IActionResult> SaveBasicInfo([FromForm] EmployeeBasicInfoViewModel model, [FromForm] EmployeePayrollViewModel? payroll, [FromForm] EmployeeBankViewModel? bank, [FromForm] string? SalaryComponents)
-        //{
-        //    if (model == null)
-        //        return BadRequest(new { status = false, message = "Invalid payload" });
+        public class SaveEmployeeRequest
+        {
+            // JSON strings
+            public string Basic { get; set; }
+            public string Payroll { get; set; }
+            public string Bank { get; set; }
+            public string SalaryComponents { get; set; }
 
-        //    try
-        //    {
-        //        string? profilePath = null;
-        //        if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
-        //        {
-        //            profilePath = ExternalHelper.FileUploadThroughApi(model.ProfilePicture, _env.ContentRootPath, "EmployeeProfile");
-        //        }
+            // File
+            public IFormFile? ProfilePicture { get; set; }
+        }
 
-        //        var saved = await _employeeService.SaveBasicInfoAsync(model, profilePath);
 
-        //        if (saved == null)
-        //            return StatusCode(500, new { status = false, message = "Failed to save basic info" });
+        [HttpPost("SaveAllEmployeeData")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> SaveAllEmployeeData([FromForm] SaveEmployeeRequest model)
+        {
+            try
+            {
+                IPAddress? remoteIpAddress = HttpContext.Connection.RemoteIpAddress;
+                string ipAddressString = remoteIpAddress?.ToString() ?? "IP not found";
 
-        //        return Ok(new { status = true, message = "Basic info saved", data = saved });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error saving basic info");
-        //        return StatusCode(500, new { status = false, message = "An error occurred while saving basic info" });
-        //    }
-        //}
+                // Optional: Map to IPv4 if it's an IPv6 loopback (::1) during local debugging
+                if (remoteIpAddress != null && remoteIpAddress.IsIPv4MappedToIPv6)
+                {
+                    remoteIpAddress = remoteIpAddress.MapToIPv4();
+                    ipAddressString = remoteIpAddress.ToString();
+                }
+                
+                var basic =
+                    JsonSerializer.Deserialize<EmployeeBasicInfoViewModel>(model.Basic);
 
-        //[HttpPost("SaveAllEmployeeData")]
-        //public async Task<IActionResult> SaveAllEmployeeData([FromForm] EmployeeBasicInfoViewModel basic, [FromForm] string? payroll, [FromForm] string? bank, [FromForm] string? SalaryComponents, [FromForm] IFormFile? ProfilePicture)
-        //{
-        //    try
-        //    {
-        //        // 🔹 Deserialize payroll JSON
-        //        EmployeePayrollViewModel? payrollObj = null;
-        //        if (!string.IsNullOrWhiteSpace(payroll))
-        //        {
-        //            payrollObj = JsonSerializer.Deserialize<EmployeePayrollViewModel>(payroll);
-        //        }
+                var payroll =
+                    JsonSerializer.Deserialize<EmployeePayrollViewModel>(model.Payroll);
 
-        //        // 🔹 Deserialize bank JSON
-        //        EmployeeBankViewModel? bankObj = null;
-        //        if (!string.IsNullOrWhiteSpace(bank))
-        //        {
-        //            bankObj = JsonSerializer.Deserialize<EmployeeBankViewModel>(bank);
-        //        }
+                var bank =
+                    JsonSerializer.Deserialize<EmployeeBankViewModel>(model.Bank);
 
-        //        // 🔹 Deserialize salary components list
-        //        List<SalaryComponentViewModel>? salaryComponentsList = null;
-        //        if (!string.IsNullOrWhiteSpace(SalaryComponents))
-        //        {
-        //            salaryComponentsList = JsonSerializer.Deserialize<List<SalaryComponentViewModel>>(SalaryComponents);
-        //        }
+                var salaryComponents =
+                    JsonSerializer.Deserialize<List<SalaryComponentViewModel>>(
+                        model.SalaryComponents
+                    );
+                basic.CreatedBy = ipAddressString;
+                string? savedFilePath = null;
 
-        //        // 🔹 Handle profile picture upload
-        //        string? savedFilePath = null;
-        //        if (ProfilePicture != null && ProfilePicture.Length > 0)
-        //        {
-        //            var folder = Path.Combine("wwwroot", "uploads", "employees");
-        //            if (!Directory.Exists(folder))
-        //                Directory.CreateDirectory(folder);
+                if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+                {
+                    var folder = Path.Combine("wwwroot", "uploads", "employees");
+                    Directory.CreateDirectory(folder);
 
-        //            var fileName = $"{Guid.NewGuid()}_{ProfilePicture.FileName}";
-        //            var filePath = Path.Combine(folder, fileName);
+                    var fileName = $"{Guid.NewGuid()}_{model.ProfilePicture.FileName}";
+                    var filePath = Path.Combine(folder, fileName);
 
-        //            using (var stream = new FileStream(filePath, FileMode.Create))
-        //            {
-        //                await ProfilePicture.CopyToAsync(stream);
-        //            }
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await model.ProfilePicture.CopyToAsync(stream);
 
-        //            savedFilePath = fileName;  // store in DB
-        //        }
+                    savedFilePath = fileName;
+                }
 
-        //        await _employeeService.SaveAllEmployeeDataAsync(basic, payrollObj, bankObj, salaryComponentsList, savedFilePath);
+                await _employeeService.SaveAllEmployeeDataAsync( basic!, payroll!, bank!, salaryComponents!, savedFilePath );
 
-        //        return Ok(new
-        //        {
-        //            status = true,
-        //            message = "Employee data saved successfully",
-        //            profileImage = savedFilePath
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new
-        //        {
-        //            status = false,
-        //            message = ex.Message
-        //        });
-        //    }
-        //}
+                return Ok(new
+                {
+                    status = true,
+                    message = "Employee data saved successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = false,
+                    message = ex.Message
+                });
+            }
+        }
+
+
+
 
     }
 }

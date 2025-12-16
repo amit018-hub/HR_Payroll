@@ -3,6 +3,7 @@ using HR_Payroll.Core.Model;
 using HR_Payroll.Core.Models;
 using HR_Payroll.Infrastructure.Data;
 using HR_Payroll.Infrastructure.Interface;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -125,182 +126,187 @@ namespace HR_Payroll.Infrastructure.Concrete
         }
 
         public async Task<int> SaveAllEmployeeDataAsync(
-        EmployeeBasicInfoViewModel basic,
-        EmployeePayrollViewModel payroll,
-        EmployeeBankViewModel bank,
-        List<SalaryComponentViewModel>? components,
-        string? profileImage)
+         EmployeeBasicInfoViewModel basic,
+         EmployeePayrollViewModel payroll,
+         EmployeeBankViewModel bank,
+         List<SalaryComponentViewModel>? components,
+         string? profileImage)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var strategy = _context.Database.CreateExecutionStrategy();
 
-            try
+            return await strategy.ExecuteAsync(async () =>
             {
-                int employeeId;
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
 
-                // 1️⃣ Save BASIC INFO (Insert or Update)
-                Employees employee;
-
-                if (basic.EmployeeId.HasValue && basic.EmployeeId > 0)
+                try
                 {
-                    employee = await _context.Employees
-                        .FirstOrDefaultAsync(e => e.EmployeeID == basic.EmployeeId);
+                    if (basic == null)
+                        throw new ArgumentNullException(nameof(basic));
 
-                    if (employee == null)
-                        throw new Exception("Employee not found.");
+                    int employeeId;
+                    Employees employee;
 
-                    // Update fields
-                    employee.FirstName = basic.FirstName;
-                    employee.LastName = basic.LastName;
-                    employee.EmployeeCode = basic.EmployeeCode;
-                    employee.DepartmentId = basic.DepartmentId;
-                    employee.SubDepartmentId = basic.SubDepartmentId;
-                    //employee.StateID = basic.State;
-                    employee.JoiningDate = basic.JoiningDate;
-                    //employee.ReportingTo = basic.ReportingTo;
-                    //employee.SourceOfHire = basic.SourceOfHire;
-                    //employee.Interviewer = basic.Interviewer;
-                    //employee.AttendanceRules = basic.AttendanceRules;
-                    //employee.EmploymentStatus = basic.EmploymentStatus;
-                    //employee.MaritalStatus = basic.MaritalStatus;
-                    //employee.AadharNo = basic.AadharNo;
-                    //employee.PANNo = basic.PANNo;
-                    //employee.PFNo = basic.PFNo;
-                    //employee.UANNo = basic.UANNo;
-                    //employee.ESINo = basic.ESINo;
-                    //employee.NoticePeriod = basic.NoticePeriod;
-
-                    if (!string.IsNullOrWhiteSpace(profileImage))
-                        employee.ProfilePic = profileImage;
-
-                    employee.ModifiedDate = DateTime.Now;
-                }
-                else
-                {
-                    employee = new Employees
+                    if (basic.EmployeeId.HasValue && basic.EmployeeId > 0)
                     {
-                        FirstName = basic.FirstName,
-                        LastName = basic.LastName,
-                        EmployeeCode = basic.EmployeeCode,
-                        DepartmentId = basic.DepartmentId,
-                        SubDepartmentId = basic.SubDepartmentId,
-                       // State = basic.State,
-                        JoiningDate = basic.JoiningDate,
-                       // ReportingTo = basic.ReportingTo,
-                       // SourceOfHire = basic.SourceOfHire,
-                       // Interviewer = basic.Interviewer,
-                       // AttendanceRules = basic.AttendanceRules,
-                       // EmploymentStatus = basic.EmploymentStatus,
-                       // MaritalStatus = basic.MaritalStatus,
-                       // AadharNo = basic.AadharNo,
-                       // PANNo = basic.PANNo,
-                       // PFNo = basic.PFNo,
-                       // UANNo = basic.UANNo,
-                       // ESINo = basic.ESINo,
-                       // NoticePeriod = basic.NoticePeriod,
-                       // ProfilePicture = profileImage,
-                       // CreatedDate = DateTime.Now
-                    };
+                        employee = await _context.Employees
+                            .FirstOrDefaultAsync(e => e.EmployeeID == basic.EmployeeId)
+                            ?? throw new Exception("Employee not found");
 
-                    _context.Employees.Add(employee);
-                }
+                        employee.FirstName = basic.FirstName;
+                        employee.LastName = basic.LastName;
+                        employee.EmployeeCode = basic.EmployeeCode;
+                        employee.DepartmentId = basic.DepartmentId;
+                        employee.SubDepartmentId = basic.SubDepartmentId;
+                        employee.JoiningDate = basic.JoiningDate;
 
-                await _context.SaveChangesAsync();
-                employeeId = employee.EmployeeID;
-
-                // 2️⃣ Save PAYROLL
-                //var payrollDb = await _context.EmployeePayrollSalaryComponent
-                //    .FirstOrDefaultAsync(p => p.EmployeeID == employeeId);
-
-                //if (payrollDb == null)
-                //{
-                //    payrollDb = new EmployeePayroll
-                //    {
-                //        EmployeeID = employeeId,
-                //        BasicSalary = payroll.BasicSalary,
-                //        HRA = payroll.HRA,
-                //        OtherAllowance = payroll.OtherAllowance,
-                //        CreatedDate = DateTime.Now
-                //    };
-
-                //    _context.EmployeePayroll.Add(payrollDb);
-                //}
-                //else
-                //{
-                //    payrollDb.BasicSalary = payroll.BasicSalary;
-                //    payrollDb.HRA = payroll.HRA;
-                //    payrollDb.OtherAllowance = payroll.OtherAllowance;
-                //    payrollDb.ModifiedDate = DateTime.Now;
-                //}
-
-                //await _context.SaveChangesAsync();
-
-                // 3️⃣ Save BANK DETAILS
-                var bankDb = await _context.EmployeeBank
-                    .FirstOrDefaultAsync(b => b.EmployeeId == employeeId);
-
-                if (bankDb == null)
-                {
-                    bankDb = new EmployeeBank
+                        if (!string.IsNullOrWhiteSpace(profileImage))
+                            employee.ProfilePic = profileImage;
+                        employee.ModifiedBy = basic.CreatedBy;
+                        employee.ModifiedDate = DateTime.Now;
+                    }
+                    else
                     {
-                        EmployeeId = employeeId,
-                        BankName = bank.BankName,
-                        BeneficiaryName = bank.BeneficiaryName,
-                        AccountNo = bank.AccountNumber,
-                        IFSC = bank.IFSCCode,
-                        CreatedOn = DateTime.Now
-                    };
-
-                    _context.EmployeeBank.Add(bankDb);
-                }
-                else
-                {
-                    bankDb.BankName = bank.BankName;
-                    bankDb.BeneficiaryName = bank.BeneficiaryName;
-                    bankDb.AccountNo = bank.AccountNumber;
-                    bankDb.IFSC = bank.IFSCCode;
-                    bankDb.ModifiedOn = DateTime.Now;
-                }
-
-                await _context.SaveChangesAsync();
-
-                // 4️⃣ Save SALARY COMPONENTS
-                if (components != null && components.Count > 0)
-                {
-                    // Remove previous
-                    var existing = _context.EmployeeSalaryComponents
-                        .Where(c => c.EmployeeID == employeeId);
-
-                    _context.EmployeeSalaryComponents.RemoveRange(existing);
-                    await _context.SaveChangesAsync();
-
-                    // Add new component rows
-                    foreach (var item in components)
-                    {
-                        var comp = new EmployeeSalaryComponent
+                        employee = new Employees
                         {
-                            EmployeeID = employeeId,
-                            ComponentID = item.ComponentID,
-                            EffectiveFrom = item.EffectiveFrom,
-                            Amount = item.Amount,
+                            FirstName = basic.FirstName,
+                            LastName = basic.LastName,
+                            EmployeeCode = basic.EmployeeCode,
+                            DepartmentId = basic.DepartmentId,
+                            SubDepartmentId = basic.SubDepartmentId,
+                            JoiningDate = basic.JoiningDate,
                             CreatedDate = DateTime.Now,
-                            IsActive = 1
+                            CreatedBy = basic.CreatedBy,
+                            ModifiedBy = basic.CreatedBy,
                         };
 
-                        _context.EmployeeSalaryComponents.Add(comp);
+                        _context.Employees.Add(employee);
                     }
 
-                    await _context.SaveChangesAsync();
-                }
+                    await SaveChangesWithCheckAsync("BASIC INFO");
+                    employeeId = employee.EmployeeID;
 
-                await transaction.CommitAsync();
-                return employeeId;
-            }
-            catch
+                    // 2️⃣ PAYROLL
+                    var payrollDb = await _context.EmployeePayrollSalaryComponent
+                        .FirstOrDefaultAsync(p => p.EmployeeID == employeeId);
+
+                    if (payrollDb == null)
+                    {
+                        payrollDb = new EmployeePayrollSalaryComponent
+                        {
+                            EmployeeID = employeeId,
+                            Amount = payroll.SalaryPerMonth,
+                            CreatedDate = DateTime.Now,
+                            CreatedBy = basic.CreatedBy,
+                            ModifiedBy = basic.CreatedBy,
+                        };
+
+                        _context.EmployeePayrollSalaryComponent.Add(payrollDb);
+                    }
+                    else
+                    {
+                        payrollDb.Amount = payroll.SalaryPerMonth;
+                        payrollDb.ModifiedDate = DateTime.Now;
+                        payrollDb.CreatedBy = basic.CreatedBy;
+                        payrollDb.ModifiedBy = basic.CreatedBy;
+                    }
+
+                    await SaveChangesWithCheckAsync("PAYROLL");
+
+                    // 3️⃣ BANK
+                    var bankDb = await _context.EmployeeBank
+                        .FirstOrDefaultAsync(b => b.EmployeeId == employeeId);
+
+                    if (bankDb == null)
+                    {
+                        bankDb = new EmployeeBank
+                        {
+                            EmployeeId = employeeId,
+                            BankName = bank.BankName,
+                            BeneficiaryName = bank.BeneficiaryName,
+                            AccountNo = bank.AccountNumber,
+                            IFSC = bank.IFSCCode,
+                            CreatedOn = DateTime.Now,
+                            CreatedBy = basic.CreatedBy,
+                            ModifiedBy = basic.CreatedBy
+                        };
+
+                        _context.EmployeeBank.Add(bankDb);
+                    }
+                    else
+                    {
+                        bankDb.BankName = bank.BankName;
+                        bankDb.BeneficiaryName = bank.BeneficiaryName;
+                        bankDb.AccountNo = bank.AccountNumber;
+                        bankDb.IFSC = bank.IFSCCode;
+                        bankDb.ModifiedOn = DateTime.Now;
+                        bankDb.CreatedBy = basic.CreatedBy;
+                        bankDb.ModifiedBy = basic.CreatedBy;
+                    }
+
+                    await SaveChangesWithCheckAsync("BANK");
+
+                    // 4️⃣ SALARY COMPONENTS
+                    if (components != null && components.Any())
+                    {
+                        var existing = _context.EmployeeSalaryComponent
+                            .Where(c => c.EmployeeID == employeeId);
+
+                        _context.EmployeeSalaryComponent.RemoveRange(existing);
+                        await SaveChangesWithCheckAsync("REMOVE COMPONENTS");
+
+                        foreach (var item in components)
+                        {
+                            _context.EmployeeSalaryComponent.Add(new EmployeeSalaryComponent
+                            {
+                                EmployeeID = employeeId,
+                                ComponentID = item.ComponentId,
+                                EffectiveFrom = item.EffectiveFrom,
+                                Amount = item.Amount,
+                                CreatedDate = DateTime.Now,
+                                CreatedBy = basic.CreatedBy,
+                                ModifiedBy = basic.CreatedBy,
+                                IsActive = 1
+                            });
+                        }
+
+                        await SaveChangesWithCheckAsync("ADD COMPONENTS");
+                    }
+
+                    await transaction.CommitAsync();
+                    return employeeId;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    // 🔴 THIS IS KEY FOR DEBUGGING
+                    throw new Exception(
+                        "SaveAllEmployeeDataAsync failed. See inner exception.",
+                        ex
+                    );
+                }
+            });
+        }
+
+        private async Task SaveChangesWithCheckAsync(string step)
+        {
+            try
             {
-                await transaction.RollbackAsync();
-                throw;
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                // 🔴 Breakpoint here — debugger WILL hit
+                throw new Exception($"Database update failed at step: {step}", ex);
+            }
+            catch (Exception ex)
+            {
+                // 🔴 Breakpoint here — debugger WILL hit
+                throw new Exception($"Unexpected error at step: {step}", ex);
             }
         }
+
 
     }
 }

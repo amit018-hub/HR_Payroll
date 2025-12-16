@@ -22,8 +22,8 @@ namespace HR_Payroll.Infrastructure.Data
         public DbSet<EmployeeBank> EmployeeBank { get; set; }
         public DbSet<Departments> Departments { get; set; }
         public DbSet<SubDepartments> SubDepartments { get; set; }
-        public DbSet<EmployeePayrollSalaryComponent> EmployeePayrollSalaryComponents { get; set; }
-        public DbSet<EmployeeSalaryComponent> EmployeeSalaryComponents { get; set; }
+        public DbSet<EmployeePayrollSalaryComponent> EmployeePayrollSalaryComponent { get; set; }
+        public DbSet<EmployeeSalaryComponent> EmployeeSalaryComponent { get; set; }
         public DbSet<EmployeeSalaryMaster> EmployeeSalaryMasters { get; set; }
         public DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments { get; set; }
         public DbSet<SalaryComponents> SalaryComponents { get; set; }

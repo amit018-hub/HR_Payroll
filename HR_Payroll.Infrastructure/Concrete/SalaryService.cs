@@ -84,13 +84,13 @@ namespace HR_Payroll.Infrastructure.Concrete
                 if (employeeId <= 0 || components == null) return false;
 
                 // remove existing components for same employee + payroll period
-                var existing = await _context.EmployeePayrollSalaryComponents
+                var existing = await _context.EmployeePayrollSalaryComponent
                     .Where(c => c.EmployeeID == employeeId && c.PayrollMonth == payrollMonth && c.PayrollYear == payrollYear)
                     .ToListAsync();
 
                 if (existing.Any())
                 {
-                    _context.EmployeePayrollSalaryComponents.RemoveRange(existing);
+                    _context.EmployeePayrollSalaryComponent.RemoveRange(existing);
                 }
 
                 // prepare and insert new components
@@ -105,7 +105,7 @@ namespace HR_Payroll.Infrastructure.Concrete
                     comp.CreatedDate = now;
                 }
 
-                await _context.EmployeePayrollSalaryComponents.AddRangeAsync(components);
+                await _context.EmployeePayrollSalaryComponent.AddRangeAsync(components);
                 await _context.SaveChangesAsync();
 
                 return true;
