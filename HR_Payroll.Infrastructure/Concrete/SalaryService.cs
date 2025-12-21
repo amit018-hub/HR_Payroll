@@ -38,25 +38,24 @@ namespace HR_Payroll.Infrastructure.Concrete
             }
         }
 
-        public async Task<EmployeeSalaryMaster?> SaveEmployeeSalaryMasterAsync(EmployeeSalaryMaster master)
+        public async Task<EmployeeSalary?> SaveEmployeeSalaryMasterAsync(EmployeeSalary master)
         {
             try
             {
                 if (master == null) return null;
 
                 // expire existing active master (if any)
-                var existing = await _context.EmployeeSalaryMasters
+                var existing = await _context.EmployeeSalary
                     .Where(s => s.EmployeeID == master.EmployeeID && (s.IsActive == 1 || s.IsActive == null))
                     .OrderByDescending(s => s.EffectiveFrom)
                     .FirstOrDefaultAsync();
 
                 if (existing != null)
                 {
-                    existing.EffectiveTo = DateTime.UtcNow;
                     existing.IsActive = 0;
                     existing.ModifiedDate = DateTime.UtcNow;
                     existing.ModifiedBy = master.CreatedBy ?? existing.ModifiedBy;
-                    _context.EmployeeSalaryMasters.Update(existing);
+                    _context.EmployeeSalary.Update(existing);
                 }
 
                 master.EffectiveFrom = master.EffectiveFrom == default ? DateTime.UtcNow : master.EffectiveFrom;
@@ -65,7 +64,7 @@ namespace HR_Payroll.Infrastructure.Concrete
                 master.CreatedDate = DateTime.UtcNow;
                 master.ModifiedDate = null;
 
-                await _context.EmployeeSalaryMasters.AddAsync(master);
+                await _context.EmployeeSalary.AddAsync(master);
                 await _context.SaveChangesAsync();
 
                 return master;

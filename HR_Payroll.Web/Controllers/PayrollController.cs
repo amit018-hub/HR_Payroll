@@ -358,6 +358,12 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+
+        public ActionResult SalarySlip()
+        {
+            return View();
+        }
+
     }
 
 }

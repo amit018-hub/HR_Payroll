@@ -23,5 +23,6 @@ namespace HR_Payroll.Core.Entity
         public DateTime? ModifiedDate { get; set; }
         public string? ModifiedBy { get; set; }
         public int? PayrollID { get; set; }
+        public DateTime EffectiveFrom { get; set; }
     }
 }

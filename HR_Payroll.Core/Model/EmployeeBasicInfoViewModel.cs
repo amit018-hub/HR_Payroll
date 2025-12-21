@@ -57,7 +57,7 @@ namespace HR_Payroll.Core.Models
         [MaxLength(50)]
         public string?   ESINo { get; set; }
 
-        public int? NoticePeriod { get; set; }
+        public string? NoticePeriod { get; set; }
         public string? CreatedBy { get; set; }
     }
 }

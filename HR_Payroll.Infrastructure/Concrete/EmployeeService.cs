@@ -1,5 +1,7 @@
-﻿using HR_Payroll.Core.Entity;
+﻿using HR_Payroll.Core.DTO;
+using HR_Payroll.Core.Entity;
 using HR_Payroll.Core.Model;
+using HR_Payroll.Core.Model.Master;
 using HR_Payroll.Core.Models;
 using HR_Payroll.Infrastructure.Data;
 using HR_Payroll.Infrastructure.Interface;
@@ -14,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace HR_Payroll.Infrastructure.Concrete
 {
-    public class EmployeeService:IEmployeeService
+    public class EmployeeService : IEmployeeService
     {
         private readonly AppDbContext _context;
         private readonly ILogger<EmployeeService> _logger;
@@ -144,6 +146,8 @@ namespace HR_Payroll.Infrastructure.Concrete
                     if (basic == null)
                         throw new ArgumentNullException(nameof(basic));
 
+
+
                     int employeeId;
                     Employees employee;
 
@@ -155,11 +159,19 @@ namespace HR_Payroll.Infrastructure.Concrete
 
                         employee.FirstName = basic.FirstName;
                         employee.LastName = basic.LastName;
-                        employee.EmployeeCode = basic.EmployeeCode;
                         employee.DepartmentId = basic.DepartmentId;
                         employee.SubDepartmentId = basic.SubDepartmentId;
                         employee.JoiningDate = basic.JoiningDate;
-
+                        employee.Reporting_To = basic.ReportingTo;
+                        employee.Interviewer = basic.Interviewer;
+                        employee.AttendanceRules = basic.AttendanceRules;
+                        employee.MaritalStatus = basic.MaritalStatus;
+                        employee.AadhaarNo = basic.AadharNo;
+                        employee.PANNo = basic.PANNo;
+                        employee.PFNo = basic.PFNo;
+                        employee.UANNo = basic.UANNo;
+                        employee.ESINo = basic.ESINo;
+                        employee.NoticePeriod = basic.NoticePeriod;
                         if (!string.IsNullOrWhiteSpace(profileImage))
                             employee.ProfilePic = profileImage;
                         employee.ModifiedBy = basic.CreatedBy;
@@ -171,10 +183,20 @@ namespace HR_Payroll.Infrastructure.Concrete
                         {
                             FirstName = basic.FirstName,
                             LastName = basic.LastName,
-                            EmployeeCode = basic.EmployeeCode,
+                            EmployeeCode = await GenerateUniqueEmployeeIdAsync(),
                             DepartmentId = basic.DepartmentId,
                             SubDepartmentId = basic.SubDepartmentId,
                             JoiningDate = basic.JoiningDate,
+                            Reporting_To = basic.ReportingTo,
+                            Interviewer = basic.Interviewer,
+                            AttendanceRules = basic.AttendanceRules,
+                            MaritalStatus = basic.MaritalStatus,
+                            AadhaarNo = basic.AadharNo,
+                            PANNo = basic.PANNo,
+                            PFNo = basic.PFNo,
+                            UANNo = basic.UANNo,
+                            ESINo = basic.ESINo,
+                            NoticePeriod = basic.NoticePeriod,
                             CreatedDate = DateTime.Now,
                             CreatedBy = basic.CreatedBy,
                             ModifiedBy = basic.CreatedBy,
@@ -288,6 +310,39 @@ namespace HR_Payroll.Infrastructure.Concrete
                 }
             });
         }
+        public async Task<string> GenerateUniqueEmployeeIdAsync()
+        {
+            const string prefix = "DRCTC";
+
+            using var transaction = await _context.Database
+                .BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+            try
+            {
+                // Get last EmployeeId safely
+                var lastEmployeeId = await _context.Employees
+                    .OrderByDescending(e => e.EmployeeID)
+                    .Select(e => e.EmployeeCode)
+                    .FirstOrDefaultAsync();
+
+                int nextNumber = 1;
+
+                if (!string.IsNullOrEmpty(lastEmployeeId))
+                {
+                    nextNumber = int.Parse(lastEmployeeId.Replace(prefix, "")) + 1;
+                }
+
+                var newEmployeeId = $"{prefix}{nextNumber:D4}";
+
+                await transaction.CommitAsync();
+                return newEmployeeId;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
 
         private async Task SaveChangesWithCheckAsync(string step)
         {
@@ -306,6 +361,152 @@ namespace HR_Payroll.Infrastructure.Concrete
                 throw new Exception($"Unexpected error at step: {step}", ex);
             }
         }
+
+
+        public async Task<List<AssignEmployeeListModel>> GetAllEmployeesAsync()
+        {
+            try
+            {
+                // Pull projection into memory first so we can compute SlNo and TotalRecords,
+                // avoiding EF Core translation issues (Select overload with index isn't supported).
+                var items = await (
+                                    from e in _context.Employees.AsNoTracking()
+                                    join d in _context.Departments.AsNoTracking() on e.DepartmentId equals d.DepartmentId into deptJoin
+                                    from d in deptJoin.DefaultIfEmpty()
+                                    join sd in _context.SubDepartments.AsNoTracking() on e.SubDepartmentId equals sd.SubDepartmentId into subDeptJoin
+                                    from sd in subDeptJoin.DefaultIfEmpty()
+                                    orderby e.EmployeeID descending
+                                    select new
+                                    {
+                                        e.EmployeeID,
+                                        FirstName = e.FirstName ?? string.Empty,
+                                        LastName = e.LastName ?? string.Empty,
+                                        e.EmployeeCode,
+                                        DepartmentName = d != null ? d.DepartmentName : null,
+                                        SubDepartmentName = sd != null ? sd.SubDepartmentName : null,
+                                        Manager = e.Reporting_To,
+                                        e.JoiningDate,
+                                        e.IsActive
+                                    })
+                                    .ToListAsync();
+
+                var total = items.Count;
+                var result = items.Select((x, i) => new AssignEmployeeListModel
+                {
+                    SlNo = i + 1,
+                    TotalRecords = total,
+                    EmployeeID = x.EmployeeID,
+                    EmployeeName = $"{x.FirstName} {x.LastName}".Trim(),
+                    Department = x.DepartmentName,
+                    SubDepartment = x.SubDepartmentName,
+                    TeamLead = null,
+                    Manager = x.Manager,
+                    EmployeeCode = x.EmployeeCode,
+                    IsActive = x.IsActive,
+                    JoiningDate = x.JoiningDate
+                }).ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving employee list");
+                return new List<AssignEmployeeListModel>();
+            }
+        }
+
+        public async Task<EmployeeDetailsModel?> GetEmployeeDetailsAsync(int employeeId)
+        {
+            if (employeeId <= 0) return null;
+
+            try
+            {
+                var basicWithNames = await (
+                    from e in _context.Employees.AsNoTracking()
+                    where e.EmployeeID == employeeId
+                    join d in _context.Departments.AsNoTracking() on e.DepartmentId equals d.DepartmentId into deptJoin
+                    from d in deptJoin.DefaultIfEmpty()
+                    join sd in _context.SubDepartments.AsNoTracking() on e.SubDepartmentId equals sd.SubDepartmentId into subDeptJoin
+                    from sd in subDeptJoin.DefaultIfEmpty()
+                    select new EmployeeBasicDto
+                    {
+                        EmployeeID = e.EmployeeID,
+                        EmployeeCode = e.EmployeeCode,
+                        FirstName = e.FirstName,
+                        LastName = e.LastName,
+                        DepartmentId = e.DepartmentId,
+                        DepartmentName = d != null ? d.DepartmentName : null,
+                        SubDepartmentId = e.SubDepartmentId,
+                        SubDepartmentName = sd != null ? sd.SubDepartmentName : null,
+                        Reporting_To = e.Reporting_To,
+                        JoiningDate = e.JoiningDate,
+                        ProfilePic = e.ProfilePic,
+                        AadhaarNo = e.AadhaarNo,
+                        PANNo = e.PANNo,
+                        PFNo = e.PFNo,
+                        UANNo = e.UANNo,
+                        ESINo = e.ESINo
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (basicWithNames == null) return null;
+
+                var bank = await _context.EmployeeBank
+                    .AsNoTracking()
+                    .Where(b => b.EmployeeId == employeeId)
+                    .Select(b => new EmployeeBankDto
+                    {
+                        BeneficiaryName = b.BeneficiaryName,
+                        BankName = b.BankName,
+                        AccountNo = b.AccountNo,
+                        IFSC = b.IFSC
+                    })
+                    .FirstOrDefaultAsync();
+
+                var payroll = await _context.EmployeeSalary
+                    .AsNoTracking()
+                    .Where(p => p.EmployeeID == employeeId)
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .Select(p => new PayrollDto
+                    {
+                        Amount = p.Amount,
+                        EffectiveFrom = p.EffectiveFrom,
+                        PayrollMonth = p.PayrollMonth,
+                        PayrollYear = p.PayrollYear
+                    })
+                    .FirstOrDefaultAsync();
+
+                var components = await (
+                                        from c in _context.EmployeeSalaryComponent.AsNoTracking()
+                                        join sc in _context.SalaryComponents.AsNoTracking()
+                                            on c.ComponentID equals sc.ComponentID into scJoin
+                                        from sc in scJoin.DefaultIfEmpty()
+                                        where c.EmployeeID == employeeId
+                                        orderby c.EffectiveFrom descending
+                                        select new SalaryComponentDto
+                                        {
+                                            ComponentId = c.ComponentID,
+                                            ComponentName = sc != null ? sc.ComponentName : null,
+                                            Amount = c.Amount,
+                                            EffectiveFrom = c.EffectiveFrom
+                                        })
+                                        .ToListAsync();
+
+                return new EmployeeDetailsModel
+                {
+                    Basic = basicWithNames,
+                    Bank = bank,
+                    Payroll = payroll,
+                    Components = components
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving employee details for {EmployeeId}", employeeId);
+                return null;
+            }
+        }
+
 
 
     }

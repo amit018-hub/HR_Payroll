@@ -25,16 +25,11 @@
                     </nav>
 
                     <div class="tab-content" id="nav-tabContent">
-                        <!-- STEP 1: Employee Details & Basic Info -->
                         <div class="tab-pane tp fade" id="step1">
                             <h4 class="card-title mt-3 mb-2">Employee Details</h4>
-                            @* <input type="hidden" id="employeeId" /> *@
                             <!-- Employee core details -->
                             <div class="row">
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label">Employee Code</label>
-                                    <input type="text" class="form-control" placeholder="EMP001" id="empcode" data-required="true">
-                                </div>
+
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label">First Name</label>
                                     <input type="text" class="form-control" placeholder="First Name" id="firstname" data-required="true">
@@ -42,6 +37,16 @@
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label">Last Name</label>
                                     <input type="text" class="form-control" placeholder="Last Name" id="lastname" data-required="true">
+                                </div>
+                                  <div class="col-md-6 mb-2">
+                                    <label class="form-label">Mobile</label>
+                                    <input type="tel" class="form-control" placeholder="Last Name" id="mobile" data-required="true" maxlength="10"
+                                           pattern="[6-9][0-9]{9}"
+                                           oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" placeholder="Last Name" id="email" data-required="true">
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label">Department</label>

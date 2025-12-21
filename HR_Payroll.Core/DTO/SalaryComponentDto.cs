@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 
-namespace HR_Payroll.Core.Models
+namespace HR_Payroll.Core.DTO
 {
     public class SalaryComponentDto
     {
         public int? ComponentId { get; set; }
         public string ComponentName { get; set; }
         public decimal Amount { get; set; }
+        public DateTime EffectiveFrom { get; set; }
     }
 
     public class EmployeeSalaryBreakupViewModel
