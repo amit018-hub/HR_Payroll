@@ -1,4 +1,5 @@
 ﻿using HR_Payroll.CommonCases.Utility;
+using HR_Payroll.Core.DTO;
 using HR_Payroll.Core.Entity;
 using HR_Payroll.Core.Model;
 using HR_Payroll.Core.Models;
@@ -65,10 +66,10 @@ namespace HR_Payroll.API.Controllers
 
             try
             {
-                var master = new EmployeeSalaryMaster
+                var master = new EmployeeSalary
                 {
                     EmployeeID = model.EmployeeId.Value,
-                    Salary = model.SalaryPerMonth,
+                    Amount = model.SalaryPerMonth,
                     EffectiveFrom = DateTime.UtcNow,
                     IsActive = 1,
                     CreatedBy = "System"

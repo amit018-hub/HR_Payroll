@@ -1,0 +1,192 @@
+﻿    @{
+    ViewData["Title"] = "Employees";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">Employees</h4>
+                <div>
+                    <a class="btn btn-primary" href="@Url.Action("EmployeeMaster", "Employee")">Add New</a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="employeesTable" class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Joining Date</th>
+                                <th>Status</th>
+                                <th style="width:120px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details / Components modal -->
+<div class="modal fade" id="employeeDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Employee Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="employeeDetailsContent">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <img id="empProfile" src="~/images/avatar.png" class="img-fluid rounded mb-2" style="max-height:150px;" />
+                        </div>
+                        <div class="col-md-8">
+                            <h5 id="empName"></h5>
+                            <p id="empCode" class="text-muted"></p>
+                            <p><strong>Joining:</strong> <span id="empJoining"></span></p>
+                            <p><strong>Reporting To:</strong> <span id="empReporting"></span></p>
+                            <p><strong>Contact / IDs:</strong> <span id="empIds"></span></p>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <h6>Bank Details</h6>
+                    <div id="empBank" class="mb-3 text-muted">-</div>
+
+                    <h6>Latest Payroll</h6>
+                    <div id="empPayroll" class="mb-3 text-muted">-</div>
+
+                    <h6>Salary Components</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="empComponentsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Amount</th>
+                                    <th>Effective From</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script>
+    (function () {
+        function loadEmployees() {
+            $('#employeesTable tbody').html('<tr><td colspan="7" class="text-center">Loading...</td></tr>');
+            $.getJSON('/Employee/GetEmployees', function (res) {
+                if (!res || !res.status) {
+                    $('#employeesTable tbody').html('<tr><td colspan="7" class="text-center text-danger">Failed to load data</td></tr>');
+                    return;
+                }
+                const data = res.result.data ?? res.result; // handle wrapper
+                if (!Array.isArray(data) || data.length === 0) {
+                    $('#employeesTable tbody').html('<tr><td colspan="7" class="text-center text-muted">No records found</td></tr>');
+                    return;
+                }
+                const rows = data.map((e, idx) => {
+                    const name = (e.employeeName || '');
+                    const joining = e.joiningDate ? new Date(e.joiningDate).toLocaleDateString() : '';
+                    const status = e.isActive ? 'Active' : 'Inactive';
+                    return `<tr>
+                        <td>${idx + 1}</td>
+                        <td>${e.employeeCode ?? ''}</td>
+                        <td>${name}</td>
+                        <td>${e.department ?? ''}</td>
+                        <td>${joining}</td>
+                        <td>${status}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary me-1 view-details" data-id="${e.employeeID}">Details</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+                $('#employeesTable tbody').html(rows);
+            }).fail(function () {
+                $('#employeesTable tbody').html('<tr><td colspan="7" class="text-center text-danger">Failed to load data</td></tr>');
+            });
+        }
+
+        function showDetails(id) {
+            $('#employeeDetailsModal').modal('show');
+            $('#empName').text('Loading...');
+            $('#empComponentsTable tbody').html('<tr><td colspan="3" class="text-center">Loading...</td></tr>');
+            $.getJSON('@Url.Action("GetEmployeeDetails", "Employee")', { id: id }, function (res) {
+                if (!res || !res.status) {
+                    $('#empName').text('Failed to load');
+                    return;
+                }
+                const payload = res.result.data ?? res.result;
+                const basic = payload.basic;
+                const bank = payload.bank;
+                const payroll = payload.payroll;
+                const components = payload.components ?? [];
+
+                $('#empName').text((basic.firstName ?? '') + ' ' + (basic.lastName ?? ''));
+                $('#empCode').text(basic.employeeCode ?? '');
+                $('#empJoining').text(basic.joiningDate ? new Date(basic.joiningDate).toLocaleDateString() : '-');
+                $('#empReporting').text(basic.reporting_To ?? '-');
+                $('#empIds').text(`Aadhaar: ${basic.aadhaarNo ?? '-'} | PAN: ${basic.panNo ?? '-'}`);
+
+                if (basic.profilePic) {
+                    $('#empProfile').attr('src', '/uploads/employees/' + basic.profilePic);
+                } else {
+                    $('#empProfile').attr('src', '~/images/avatar.png');
+                }
+
+                if (bank) {
+                    $('#empBank').html(`<strong>${bank.beneficiaryName ?? '-'}</strong><br/>${bank.bankName ?? '-'}<br/>A/C: ${bank.accountNo ?? '-'}, IFSC: ${bank.ifsc ?? '-'}`);
+                } else {
+                    $('#empBank').text('-');
+                }
+
+                if (payroll) {
+                    $('#empPayroll').text(`Salary: ${payroll.salary ?? '-'} (Effective: ${payroll.effectiveFrom ? new Date(payroll.effectiveFrom).toLocaleDateString() : '-'})`);
+                } else {
+                    $('#empPayroll').text('-');
+                }
+
+                if (components.length) {
+                    const compRows = components.map(c => `<tr>
+                        <td>${c.componentName}</td>
+                        <td>${c.amount}</td>
+                        <td>${c.effectiveFrom ? new Date(c.effectiveFrom).toLocaleDateString() : '-'}</td>
+                    </tr>`).join('');
+                    $('#empComponentsTable tbody').html(compRows);
+                } else {
+                    $('#empComponentsTable tbody').html('<tr><td colspan="3" class="text-center text-muted">No components</td></tr>');
+                }
+            }).fail(function () {
+                $('#empName').text('Failed to load');
+            });
+        }
+
+        $(function () {
+            loadEmployees();
+
+            $('#employeesTable').on('click', '.view-details', function () {
+                const id = $(this).data('id');
+                showDetails(id);
+            });
+        });
+    })();
+</script>
+

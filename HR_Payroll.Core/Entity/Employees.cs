@@ -36,5 +36,16 @@ namespace HR_Payroll.Core.Entity
         public string? CreatedBy { get; set; }
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
         public string? ModifiedBy { get; set; }
+        public string? Reporting_To { get; set; }
+        public string? Interviewer { get; set; }
+        public string? AttendanceRules { get; set; }
+        public string? MaritalStatus { get; set; }
+        public string? AadhaarNo { get; set; }
+        public string? PANNo { get; set; }
+        public string? PFNo { get; set; }
+        public string? UANNo { get; set; }
+        public string? ESINo { get; set; }
+        public string? NoticePeriod { get; set; }
+
     }
 }

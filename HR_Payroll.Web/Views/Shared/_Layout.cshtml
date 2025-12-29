@@ -194,6 +194,11 @@
                                 <a class="nav-link" asp-action="EmployeeMaster" asp-controller="Employee">Employee Master</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
+                          <ul class="nav flex-column">                         
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="EmployeeList" asp-controller="Employee">Employee List</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
                     </div><!-- end Master -->
                 }
                 else
@@ -212,10 +217,21 @@
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
                     </div><!-- end Attendance -->
+                    <div  class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Report</h6>
+                        </div>
+
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div><!-- end Report -->
                 }
                 @if (userTypeId != 1)
                 {
-                    <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
+                    <div  class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
                         <div class="title-box">
                             <h6 class="menu-title">Payroll</h6>
                         </div>
@@ -230,19 +246,20 @@
                         </ul><!--end nav-->
                     </div><!-- end Payroll -->
                 }
-                @if (userTypeId == 1)
+                @if (userTypeId == 2)
                 {
-                    <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
+                    <div  class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
                         <div class="title-box">
-                            <h6 class="menu-title">Report</h6>
+                            <h6 class="menu-title">Payroll</h6>
                         </div>
 
                         <ul class="nav flex-column">
+                           
                             <li class="nav-item">
-                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
+                                <a class="nav-link" asp-action="#" asp-controller="Payroll">Salary Release</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
-                    </div><!-- end Report -->
+                    </div>
                 }
             </div>
             <!--end menu-body-->

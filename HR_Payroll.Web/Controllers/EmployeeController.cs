@@ -1,4 +1,5 @@
-﻿using HR_Payroll.Core.Model;
+﻿using HR_Payroll.Core.DTO;
+using HR_Payroll.Core.Model;
 using HR_Payroll.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
@@ -236,6 +237,51 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+
+        [HttpGet]
+        public IActionResult EmployeeList()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetEmployees()
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var response = await client.GetAsync($"{_apiBaseUrl}Employee/GetAllEmployees");
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { status = false, data = new object[0] });
+
+                var obj = await response.Content.ReadFromJsonAsync<JsonElement?>();
+                return Json(new { status = true, result = obj });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, error = ex.Message });
+            }
+        }
+
+        // proxy: get single employee details for modal/view
+        [HttpGet]
+        public async Task<JsonResult> GetEmployeeDetails(int id)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var response = await client.GetAsync($"{_apiBaseUrl}Employee/GetEmployeeDetails/{id}");
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { status = false, data = (object?)null });
+
+                var obj = await response.Content.ReadFromJsonAsync<JsonElement?>();
+                return Json(new { status = true, result = obj });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, error = ex.Message });
+            }
+        }
 
 
     }

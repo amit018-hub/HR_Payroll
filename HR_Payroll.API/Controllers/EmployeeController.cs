@@ -5,6 +5,7 @@ using HR_Payroll.Infrastructure.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace HR_Payroll.API.Controllers
@@ -103,8 +104,43 @@ namespace HR_Payroll.API.Controllers
             }
         }
 
+        [HttpGet("GetAllEmployees")]
+        public async Task<IActionResult> GetAllEmployees()
+        {
+            try
+            {
+                var list = await _employeeService.GetAllEmployeesAsync();
+                return Ok(new { status = true, data = list });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching employees list");
+                return StatusCode(500, new { status = false, message = "Failed to fetch employees" });
+            }
+        }
 
+        [HttpGet("GetEmployeeDetails/{id:int}")]
+        public async Task<IActionResult> GetEmployeeDetails(int id)
+        {
+            if (id <= 0) return BadRequest(new { status = false, message = "Invalid employee id" });
 
+            try
+            {
+                var details = await _employeeService.GetEmployeeDetailsAsync(id);
+                if (details == null)
+                    return NotFound(new { status = false, message = "Employee not found" });
 
+                return Ok(new { status = true, data = details });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching employee details for {EmployeeId}", id);
+                return StatusCode(500, new { status = false, message = "Failed to fetch employee details" });
+            }
+        }
     }
+
+
+
 }
+

@@ -13,7 +13,7 @@ namespace HR_Payroll.Infrastructure.Interface
     public interface ISalaryService
     {
         Task<List<SalaryComponents>> GetAllSalaryComponentsAsync();
-        Task<EmployeeSalaryMaster?> SaveEmployeeSalaryMasterAsync(EmployeeSalaryMaster master);
+        Task<EmployeeSalary?> SaveEmployeeSalaryMasterAsync(EmployeeSalary master);
         Task<bool> SaveEmployeeSalaryComponentsAsync(int employeeId, List<EmployeePayrollSalaryComponent> components, int payrollMonth, int payrollYear);
     }
 }
