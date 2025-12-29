@@ -65,6 +65,8 @@ namespace HR_Payroll.Web.Controllers
             }
 
             // Pass to the view model so Razor can prefill fields
+            ViewBag.CompanyName = _configuration["CompanySettings:Name"];
+            ViewBag.CompanyEmail = _configuration["CompanySettings:Email"];
             var model = new LoginModel
             {
                 Username = username,

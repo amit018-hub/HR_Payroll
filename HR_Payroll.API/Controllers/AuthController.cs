@@ -28,7 +28,7 @@ namespace HR_Payroll.API.Controllers
         private readonly ILogger<AuthController> _logger;
         public AuthController(
              JwtIdentitySetting serverSettings,
-             JWTServiceExtension jwtService,             
+             JWTServiceExtension jwtService,
              IPasswordHasher passwordHasher,
              IConfiguration configuration,
              IEmailService emailService,
@@ -108,7 +108,8 @@ namespace HR_Payroll.API.Controllers
                     {
                         accessToken = jwtToken,
                         refreshToken = refreshToken,
-                        expiresAt = expiresAt
+                        expiresAt = expiresAt,
+                        isAdmin = user.UserTypeId == 1 ? true : false
                     }
                 });
             }
@@ -213,27 +214,27 @@ namespace HR_Payroll.API.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
-                return BadRequest(new DataResponse<object> 
+                return BadRequest(new DataResponse<object>
                 {
-                    status = false, 
+                    status = false,
                     message = "Email is required",
                     data = new List<object>()
                 });
 
             var email = model.Email.Trim();
             if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                return BadRequest(new DataResponse<object> 
-                { 
-                    status = false, 
+                return BadRequest(new DataResponse<object>
+                {
+                    status = false,
                     message = "Invalid email format",
                     data = new List<object>()
                 });
 
             var user = await _authService.GetUserByEmailAsync(email);
             if (user == null)
-                return NotFound(new DataResponse<object> 
-                { 
-                    status = false, 
+                return NotFound(new DataResponse<object>
+                {
+                    status = false,
                     message = "Email not registered",
                     data = new List<object>()
                 });
@@ -254,9 +255,9 @@ namespace HR_Payroll.API.Controllers
             try
             {
                 await _emailService.SendPasswordResetEmailAsync(user.Entity.Email, email, resetLink, _emailConfig);
-                return Ok(new DataResponse<object> 
-                { 
-                    status = true, 
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
                     message = "Password reset link sent to your email.",
                     data = new List<object>()
                 });
@@ -264,8 +265,8 @@ namespace HR_Payroll.API.Controllers
             catch (Exception ex)
             {
                 // log ex
-                return StatusCode(500, new DataResponse<object> 
-                { 
+                return StatusCode(500, new DataResponse<object>
+                {
                     status = false,
                     message = "Failed to send reset email.",
                     data = new List<object>()
@@ -289,14 +290,14 @@ namespace HR_Payroll.API.Controllers
             if (tokenRow == null)
                 return NotFound(new DataResponse<object>
                 {
-                    status = false, 
+                    status = false,
                     message = "Token invalid or expired/used",
                     data = new List<object>()
                 });
 
             return Ok(new DataResponse<object>
             {
-                status = true, 
+                status = true,
                 message = "Token valid",
                 data = new { tokenRow.Entity.UserId }
             });
@@ -308,30 +309,30 @@ namespace HR_Payroll.API.Controllers
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel req)
         {
             if (string.IsNullOrWhiteSpace(req.Token) || string.IsNullOrWhiteSpace(req.NewPassword))
-                return BadRequest(new DataResponse<object> 
+                return BadRequest(new DataResponse<object>
                 {
-                    status = false, 
-                    message = "Token and new password required", 
+                    status = false,
+                    message = "Token and new password required",
                     data = new List<object>()
                 });
 
             // Validate token
             var tokenRow = await _authService.GetValidResetTokenAsync(req.Token);
             if (tokenRow == null)
-                return NotFound(new DataResponse<object> 
-                { 
-                    status = false, 
+                return NotFound(new DataResponse<object>
+                {
+                    status = false,
                     message = "Token invalid or expired/used",
-                    data = new List<object>() 
+                    data = new List<object>()
                 });
 
             // Optional: Check whether the user's password was changed after token creation
             var fullUser = await _authService.GetUserByIdAsync(tokenRow.Entity.UserId);
             if (fullUser == null)
-                return NotFound(new DataResponse<object> 
-                { 
-                    status = false, 
-                    message = "User not found", 
+                return NotFound(new DataResponse<object>
+                {
+                    status = false,
+                    message = "User not found",
                     data = new List<object>()
                 });
 
@@ -344,11 +345,11 @@ namespace HR_Payroll.API.Controllers
             // Mark token used
             await _authService.MarkResetTokenUsedAsync(req.Token);
 
-            return Ok(new DataResponse<object> 
-            { 
-                status = true, 
+            return Ok(new DataResponse<object>
+            {
+                status = true,
                 message = "Password changed successfully",
-                data = new List<object>() 
+                data = new List<object>()
             });
         }
 

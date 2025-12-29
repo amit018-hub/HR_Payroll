@@ -130,38 +130,45 @@ function initAttendanceTable() {
                 title: 'Hours Worked',
                 render: function (d, type, row) {
 
-                    // Return value if already calculated from backend
+                    // 1️⃣ Backend-calculated value
                     if (d) {
-                        // d = "2:15" OR "05:07" etc.
                         const parts = d.split(':');
                         if (parts.length === 2) {
                             const h = parseInt(parts[0], 10);
                             const m = parseInt(parts[1], 10);
                             return `${h}h ${m}m`;
                         }
-                        return d; // fallback
+                        return d;
                     }
 
-                    // If no check-in time → impossible to calculate
-                    if (!row.checkInTime) return '-';
+                    // 2️⃣ No check-in → cannot calculate
+                    if (!row.checkInTime || !row.attendanceDate) return '-';
 
-                    // Build a valid datetime from attendanceDate + checkInTime
-                    const baseDate = row.attendanceDate.split('T')[0];  // "2025-12-10"
-                    const checkInStr = `${baseDate} ${row.checkInTime}`; // "2025-12-10 21:07:36"
-                    const checkIn = new Date(checkInStr);
+                    const baseDate = row.attendanceDate.split('T')[0];
+                    const checkIn = new Date(`${baseDate} ${row.checkInTime}`);
 
-                    if (isNaN(checkIn)) return "-"; // still invalid? show -
+                    if (isNaN(checkIn)) return '-';
 
-                    // If check-out exists, calculate difference
+                    // 3️⃣ Checkout exists → normal calculation
                     if (row.checkOutTime) {
-                        const checkOutStr = `${baseDate} ${row.checkOutTime}`;
-                        const checkOut = new Date(checkOutStr);
+                        const checkOut = new Date(`${baseDate} ${row.checkOutTime}`);
+
+                        // ❗ Prevent cross-midnight calculation
+                        if (checkOut < checkIn) return '-';
+
                         return calculateHours(checkIn, checkOut);
                     }
 
-                    // No Check-out ⇒ calculate live hours
-                    const midnight = new Date(baseDate + ' 23:59:59');
-                    return calculateHours(checkIn, midnight);
+                    // 4️⃣ No checkout → check if day is still running
+                    const endOfDay = new Date(`${baseDate} 23:59:59`);
+                    const now = new Date();
+
+                    if (now < endOfDay) {
+                        return calculateHours(checkIn, now);
+                    }
+
+                    // Day completed → calculate till midnight
+                    return calculateHours(checkIn, endOfDay);
                 },
                 className: 'text-center'
             },

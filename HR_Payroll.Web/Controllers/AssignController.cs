@@ -1,4 +1,5 @@
 ﻿using HR_Payroll.Core.DTO.Dept;
+using HR_Payroll.Core.DTO.Master;
 using HR_Payroll.Core.Model.DataTable;
 using HR_Payroll.Core.Model.Master;
 using HR_Payroll.Core.Services;
@@ -22,6 +23,104 @@ namespace HR_Payroll.Web.Controllers
             _configuration = configuration;
         }
         public string _apiBaseUrl => _configuration.GetValue<string>("ApiBaseUrl");
+
+        [HttpGet]
+        public async Task<IActionResult> GetOfficeLocations()
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new
+                    {
+                        status = false,
+                        message = "Missing access or refresh token."
+                    });
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.GetAsync<List<OfficeLocationDto>>("OfficeLocation/GetAllOfficeLocation");
+
+                if (!result.status)
+                {
+                    _logger.LogWarning("Failed to retrieve office locations: {Message}", result.message);
+                    return StatusCode(500, new
+                    {
+                        status = false,
+                        message = result.message
+                    });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    message = "Office locations retrieved successfully.",
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in GetOfficeLocations");
+                return StatusCode(500, new
+                {
+                    status = false,
+                    message = "An error occurred while retrieving office locations."
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeShifts()
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new
+                    {
+                        status = false,
+                        message = "Missing access or refresh token."
+                    });
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.GetAsync<List<ShiftDto>>("EmployeeShift/GetAllEmployeeShift");
+
+                if (!result.status)
+                {
+                    _logger.LogWarning("Failed to retrieve employee shift: {Message}", result.message);
+                    return StatusCode(500, new
+                    {
+                        status = false,
+                        message = result.message
+                    });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    message = "Employee shift retrieved successfully.",
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in GetEmployeeShifts");
+                return StatusCode(500, new
+                {
+                    status = false,
+                    message = "An error occurred while retrieving employee shift."
+                });
+            }
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetDepartments()
@@ -232,9 +331,88 @@ namespace HR_Payroll.Web.Controllers
                 recordsFiltered = result.data?.Count ?? 0
             });
         }
+
         public IActionResult OrgFlowChart() => PartialView("FlowChart/_pOrgEmployeeChart");
+
         public IActionResult AssignManager() => View();
         public IActionResult AssignTeamLeader() => View();
+
+        public IActionResult AssignEmployeeShift() => View();
+
+        [HttpPost]
+        public async Task<IActionResult> AssignEmployeeShift(List<AssignEmployeeShiftRequest> requests)
+        {
+            try
+            {
+                if (requests == null || !requests.Any())
+                {
+                    return Json(new { 
+                        status = false, 
+                        message = "Invalid data" 
+                    });
+                }
+                
+                // Get tokens from claims
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+                }
+
+                // Set tokens for HttpClient
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var failed = new List<string>();
+
+                foreach (var request in requests)
+                {
+                    try
+                    {
+                        request.CreatedBy ??= HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+
+                        var result = await _apiClient.PostAsync<object>(
+                            "Master/AssignShift",
+                            request
+                        );
+
+                        if (!result.status)
+                        {
+                            failed.Add($"Emp:{request.EmployeeId}, Office:{request.OfficeId}");
+                        }
+                    }
+                    catch
+                    {
+                        failed.Add($"Emp:{request.EmployeeId}, Office:{request.OfficeId}");
+                    }
+                }
+
+                if (failed.Any())
+                {
+                    return Json(new
+                    {
+                        status = false,
+                        message = "assign shift failed",
+                        failedRecords = failed
+                    });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    message = "Shifts assigned successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = false,
+                    message = ex.Message
+                });
+            }
+        }
 
     }
 }

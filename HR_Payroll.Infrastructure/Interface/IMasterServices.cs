@@ -11,8 +11,6 @@ namespace HR_Payroll.Infrastructure.Interface
 {
     public interface IMasterServices
     {
-       
-        
-       
+        Task<Result<bool>> AssignEmployeeShiftAsync(AssignEmployeeShiftRequest request);
     }
 }

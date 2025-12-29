@@ -22,6 +22,8 @@ namespace HR_Payroll.API
             services.AddScoped<IEmployeeService, EmployeeService>();     
             services.AddScoped<ISalaryService, SalaryService>();
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IEmployeeShiftServices, EmployeeShiftServices>();
+            services.AddScoped<IOfficeServices, OfficeServices>();
         }
     }
 }

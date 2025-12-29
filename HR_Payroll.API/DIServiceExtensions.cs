@@ -182,7 +182,6 @@ namespace HR_Payroll.API
             //InitializeRoles(app.Services).Wait();
             //InitializeUser(app.Services).Wait();
 
-
             // 9. Diagnostic middleware (development only)
             if (app.Environment.IsDevelopment())
             {

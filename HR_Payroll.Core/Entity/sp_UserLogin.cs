@@ -25,6 +25,17 @@ namespace HR_Payroll.Core.Entity
         public string? ProfilePic { get; set; }
         public bool IsTwoFactorEnabled { get; set; } = false;
         public bool AccountLocked { get; set; } = false;
+        // Shift 
+        public string? ShiftCode { get; set; }
+        public string? ShiftName { get; set; }
+        public TimeSpan? ShiftStartTime { get; set; }
+        public TimeSpan? ShiftEndTime { get; set; }
+        // Message & status
+        public int? OfficeID { get; set; }
+        public string? OfficeName { get; set; }
+        public string? Address { get; set; }
+        public decimal? OfficeLatitude { get; set; }
+        public decimal? OfficeLongitude { get; set; }
 
         // Message & status from procedure
         public string? Message { get; set; }

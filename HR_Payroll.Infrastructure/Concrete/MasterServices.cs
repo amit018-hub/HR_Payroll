@@ -26,7 +26,39 @@ namespace HR_Payroll.Infrastructure.Concrete
             _logger = logger;
             _context = context;
         }
-     
-       
+
+        public async Task<Result<bool>> AssignEmployeeShiftAsync(AssignEmployeeShiftRequest request)
+        {
+            try
+            {
+                using var conn = _context.Database.GetDbConnection();
+
+                const string sql = @"
+                    INSERT INTO EmployeeShiftAssignment
+                    (EmployeeID, OfficeID, ShiftCode, EffectiveFrom, EffectiveTo, IsActive, Del_Flg, CreatedBy, CreatedDate)
+                    VALUES
+                    (@EmployeeId, @OfficeId, @ShiftCode, @FromDate, @ToDate, 1, 'N', @CreatedBy, GETDATE())
+                ";
+
+                var rows = await conn.ExecuteAsync(sql, request);
+
+                return new Result<bool>
+                {
+                    IsSuccess = rows > 0,
+                    Message = rows > 0 ? "Shift assign successfully" : "Failed to shift assign",
+                    Entity = rows > 0
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in assign shift");
+                return new Result<bool>
+                {
+                    IsSuccess = false,
+                    Message = ex.Message,
+                    Entity = false
+                };
+            }
+        }
     }
 }

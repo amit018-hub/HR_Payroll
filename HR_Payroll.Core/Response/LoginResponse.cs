@@ -18,5 +18,6 @@ namespace HR_Payroll.Core.Response
         public string? accessToken { get; set; }
         public string? refreshToken { get; set; }
         public DateTime expiresAt { get; set; }
+        public bool isAdmin { get; set; } 
     }
 }
