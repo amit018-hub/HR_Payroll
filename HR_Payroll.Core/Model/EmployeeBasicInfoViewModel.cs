@@ -17,6 +17,12 @@ namespace HR_Payroll.Core.Models
         [MaxLength(100)]
         public string? LastName { get; set; }
 
+        [MaxLength(20)]
+        public string? MobileNumber { get; set; }
+
+        [MaxLength(150)]
+        public string? Email { get; set; }
+
         public int? DepartmentId { get; set; }
         public int? SubDepartmentId { get; set; }
 
@@ -59,5 +65,6 @@ namespace HR_Payroll.Core.Models
 
         public string? NoticePeriod { get; set; }
         public string? CreatedBy { get; set; }
+        public string? Password { get; set; }
     }
 }

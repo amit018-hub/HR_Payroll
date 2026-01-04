@@ -28,6 +28,7 @@ namespace HR_Payroll.Infrastructure.Data
         public DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments { get; set; }
         public DbSet<SalaryComponents> SalaryComponents { get; set; }
         public DbSet<sp_UserLogin> sp_UserLogin => Set<sp_UserLogin>();
+        public DbSet<Users> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

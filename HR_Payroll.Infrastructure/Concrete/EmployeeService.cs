@@ -27,7 +27,6 @@ namespace HR_Payroll.Infrastructure.Concrete
             _context = context;
         }
 
-
         public async Task<Employees?> SaveBasicInfoAsync(EmployeeBasicInfoViewModel model, string? profilePicPath = null)
         {
             try
@@ -134,10 +133,17 @@ namespace HR_Payroll.Infrastructure.Concrete
          List<SalaryComponentViewModel>? components,
          string? profileImage)
         {
+            
             var strategy = _context.Database.CreateExecutionStrategy();
-
+       
             return await strategy.ExecuteAsync(async () =>
             {
+                string? newEmployeeCode = null;
+                if (!basic.EmployeeId.HasValue || basic.EmployeeId <= 0)
+                {
+                    newEmployeeCode = await GenerateUniqueEmployeeIdAsync();
+                }
+
                 await using var transaction =
                     await _context.Database.BeginTransactionAsync();
 
@@ -179,11 +185,39 @@ namespace HR_Payroll.Infrastructure.Concrete
                     }
                     else
                     {
+                        int nextNumber = await _context.Employees.MaxAsync(e => (int?)e.EmployeeID) ?? 0;
+                        var user = new Users
+                        {
+                            UserName = $"Employee-{nextNumber + 1}",       // Login ID
+                            Email = basic.Email,                     // Assuming available
+                            MobileNumber = basic.MobileNumber,       // Assuming available
+                            PasswordHash = basic.Password,
+                            IsEmailVerified = false,
+                            IsMobileVerified = false,
+                            IsTwoFactorEnabled = false,
+                            Status = "Active",
+                            Del_Flg = "N",
+                            CreatedDate = DateTime.Now,
+                            CreatedBy = basic.CreatedBy,
+                            ModifiedBy = basic.CreatedBy,
+                            LoggedIn = false,
+                            AccountLocked = false,
+                            LoginFailureAttempt = 0,
+                            AccountStatusID = 1,
+                            UserTypeId = 3,                          // Employee
+                            EmailOtpRequiredForLogin = 0,
+                            MobileOtpRequiredForLogin = 0
+                        };
+
+                        _context.Users.Add(user);
+                        await SaveChangesWithCheckAsync("USER INSERT");
+
                         employee = new Employees
                         {
+                            UserID = user.UserID,
                             FirstName = basic.FirstName,
                             LastName = basic.LastName,
-                            EmployeeCode = await GenerateUniqueEmployeeIdAsync(),
+                            EmployeeCode = newEmployeeCode,
                             DepartmentId = basic.DepartmentId,
                             SubDepartmentId = basic.SubDepartmentId,
                             JoiningDate = basic.JoiningDate,
@@ -203,6 +237,7 @@ namespace HR_Payroll.Infrastructure.Concrete
                         };
 
                         _context.Employees.Add(employee);
+
                     }
 
                     await SaveChangesWithCheckAsync("BASIC INFO");
@@ -310,9 +345,10 @@ namespace HR_Payroll.Infrastructure.Concrete
                 }
             });
         }
+
         public async Task<string> GenerateUniqueEmployeeIdAsync()
         {
-            const string prefix = "DRCTC";
+            const string prefix = "EMP";
 
             using var transaction = await _context.Database
                 .BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
@@ -320,19 +356,24 @@ namespace HR_Payroll.Infrastructure.Concrete
             try
             {
                 // Get last EmployeeId safely
-                var lastEmployeeId = await _context.Employees
+                var lastEmployeeCode = await _context.Employees
                     .OrderByDescending(e => e.EmployeeID)
                     .Select(e => e.EmployeeCode)
                     .FirstOrDefaultAsync();
 
                 int nextNumber = 1;
 
-                if (!string.IsNullOrEmpty(lastEmployeeId))
+
+                if (!string.IsNullOrEmpty(lastEmployeeCode) && lastEmployeeCode.StartsWith(prefix))
                 {
-                    nextNumber = int.Parse(lastEmployeeId.Replace(prefix, "")) + 1;
+                    string numericPart = lastEmployeeCode.Substring(prefix.Length);
+                    if (int.TryParse(numericPart, out int parsed))
+                    {
+                        nextNumber = parsed + 1;
+                    }
                 }
 
-                var newEmployeeId = $"{prefix}{nextNumber:D4}";
+                var newEmployeeId = $"{prefix}-{nextNumber:D4}";
 
                 await transaction.CommitAsync();
                 return newEmployeeId;
@@ -361,7 +402,6 @@ namespace HR_Payroll.Infrastructure.Concrete
                 throw new Exception($"Unexpected error at step: {step}", ex);
             }
         }
-
 
         public async Task<List<AssignEmployeeListModel>> GetAllEmployeesAsync()
         {
@@ -506,8 +546,6 @@ namespace HR_Payroll.Infrastructure.Concrete
                 return null;
             }
         }
-
-
 
     }
 }

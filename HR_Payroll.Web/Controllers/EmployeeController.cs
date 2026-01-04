@@ -94,6 +94,8 @@ namespace HR_Payroll.Web.Controllers
                 multipart.Add(new StringContent(model.EmployeeCode ?? ""), "EmployeeCode");
                 multipart.Add(new StringContent(model.FirstName ?? ""), "FirstName");
                 multipart.Add(new StringContent(model.LastName ?? ""), "LastName");
+                multipart.Add(new StringContent(model.Email ?? ""), "Email");
+                multipart.Add(new StringContent(model.MobileNumber ?? ""), "MobileNumber");
                 multipart.Add(new StringContent(model.DepartmentId?.ToString() ?? ""), "DepartmentId");
                 multipart.Add(new StringContent(model.SubDepartmentId?.ToString() ?? ""), "SubDepartmentId");
                 multipart.Add(new StringContent(model.State ?? ""), "State");

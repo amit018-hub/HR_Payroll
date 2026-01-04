@@ -5,7 +5,7 @@ $(function () {
     showStep(0);
 
     // track which steps were saved explicitly
-    
+
 
     function showStep(stepIndex) {
 
@@ -362,6 +362,8 @@ function bindBasicInfo(saved) {
     $('#empcode').val(saved.employeeCode || saved.EmployeeCode || '');
     $('#firstname').val(saved.firstName || saved.FirstName || '');
     $('#lastname').val(saved.lastName || saved.LastName || '');
+    $('#mobile').val(saved.mobile || saved.mobile || '');
+    $('#email').val(saved.email || saved.email || '');
     $('#department').val(saved.departmentId || saved.DepartmentId || '');
     $('#subDepartment').val(saved.subDepartmentId || saved.SubDepartmentId || '');
     $('#state').val(saved.state || saved.State || '');
@@ -464,6 +466,8 @@ function saveBasicInfo() {
         fd.append('EmployeeCode', $('#empcode').val());
         fd.append('FirstName', $('#firstname').val());
         fd.append('LastName', $('#lastname').val());
+        fd.append('MobileNumber', $('#mobile').val());
+        fd.append('Email', $('#email').val());
         fd.append('DepartmentId', $('#department').val() || '');
         fd.append('SubDepartmentId', $('#subDepartment').val() || '');
         fd.append('State', $('#state').val() || '');
@@ -692,6 +696,8 @@ function collectAllPayload() {
         EmployeeCode: $('#empcode').val(),
         FirstName: $('#firstname').val(),
         LastName: $('#lastname').val(),
+        MobileNumber: $('#mobile').val(),
+        Email: $('#email').val(),
         DepartmentId: $('#department').val() || '',
         SubDepartmentId: $('#subDepartment').val() || '',
         State: $('#state').val() || '',

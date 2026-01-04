@@ -33,32 +33,42 @@ namespace HR_Payroll.Infrastructure.Concrete
             {
                 using var conn = _context.Database.GetDbConnection();
 
-                const string sql = @"
-                    INSERT INTO EmployeeShiftAssignment
-                    (EmployeeID, OfficeID, ShiftCode, EffectiveFrom, EffectiveTo, IsActive, Del_Flg, CreatedBy, CreatedDate)
-                    VALUES
-                    (@EmployeeId, @OfficeId, @ShiftCode, @FromDate, @ToDate, 1, 'N', @CreatedBy, GETDATE())
-                ";
+                if (conn.State != ConnectionState.Open)
+                    await conn.OpenAsync();
 
-                var rows = await conn.ExecuteAsync(sql, request);
+                var parameters = new DynamicParameters();
+                parameters.Add("@EmployeeID", request.EmployeeId);
+                parameters.Add("@ShiftCode", request.ShiftCode);
+                parameters.Add("@OfficeID", request.OfficeId);
+                parameters.Add("@EffectiveFrom", request.FromDate);
+                parameters.Add("@EffectiveTo", request.ToDate);
+                parameters.Add("@CreatedBy", request.CreatedBy);
+
+                var result = await conn.QueryFirstOrDefaultAsync<SpAssignShiftResult>(
+                    "sp_AssignEmployeeShift",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
 
                 return new Result<bool>
                 {
-                    IsSuccess = rows > 0,
-                    Message = rows > 0 ? "Shift assign successfully" : "Failed to shift assign",
-                    Entity = rows > 0
+                    IsSuccess = result?.Success == 1,
+                    Message = result?.Message ?? "Shift assignment failed",
+                    Entity = result?.Success == 1
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in assign shift");
+                _logger.LogError(ex, "Error while assigning employee shift");
+
                 return new Result<bool>
                 {
                     IsSuccess = false,
-                    Message = ex.Message,
+                    Message = "An error occurred while assigning shift",
                     Entity = false
                 };
             }
         }
+
     }
 }

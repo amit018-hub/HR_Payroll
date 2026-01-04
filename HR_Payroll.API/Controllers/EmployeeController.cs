@@ -70,6 +70,8 @@ namespace HR_Payroll.API.Controllers
                         model.SalaryComponents
                     );
                 basic.CreatedBy = ipAddressString;
+                basic.Password = ExternalHelper.Encrypt("12345");
+
                 string? savedFilePath = null;
 
                 if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
