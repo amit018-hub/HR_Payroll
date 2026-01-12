@@ -244,12 +244,12 @@ namespace HR_Payroll.Infrastructure.Concrete
                     employeeId = employee.EmployeeID;
 
                     // 2️⃣ PAYROLL
-                    var payrollDb = await _context.EmployeePayrollSalaryComponent
+                    var payrollDb = await _context.EmployeeSalary
                         .FirstOrDefaultAsync(p => p.EmployeeID == employeeId);
 
                     if (payrollDb == null)
                     {
-                        payrollDb = new EmployeePayrollSalaryComponent
+                        payrollDb = new EmployeeSalary
                         {
                             EmployeeID = employeeId,
                             Amount = payroll.SalaryPerMonth,
@@ -258,7 +258,7 @@ namespace HR_Payroll.Infrastructure.Concrete
                             ModifiedBy = basic.CreatedBy,
                         };
 
-                        _context.EmployeePayrollSalaryComponent.Add(payrollDb);
+                        _context.EmployeeSalary.Add(payrollDb);
                     }
                     else
                     {
