@@ -264,7 +264,7 @@ namespace HR_Payroll.Web.Controllers
 
                 _apiClient.SetTokens(accessToken, refreshToken);
 
-                var result = await _apiClient.GetAsync<object>($"Timesheet/{timesheetId}/history");
+                var result = await _apiClient.GetAsync<IEnumerable<TimesheetAuditDto>>($"Timesheet/{timesheetId}/history");
 
                 if (!result.status)
                 {
