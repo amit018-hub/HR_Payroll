@@ -6,6 +6,7 @@ using HR_Payroll.Core.Response;
 using HR_Payroll.Web.CommonClients;
 using Humanizer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HR_Payroll.Web.Controllers
 {
@@ -358,7 +359,10 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
-
+        public ActionResult PayrollRun()
+        {
+             return View();
+        }
 
 
         public ActionResult SalarySlip()
@@ -366,6 +370,141 @@ namespace HR_Payroll.Web.Controllers
             return View();
         }
 
+        public ActionResult BankPaymentPage()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LoadDepartments()
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+                var result = await _apiClient.GetAsync<List<object>>("Department/GetAllDepartments");
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "LoadDepartments failed");
+                return StatusCode(500, new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LoadPayrollEmployees(string? month, int? departmentId)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                // Build query string safely
+                var q = new Dictionary<string, string?>();
+                if (!string.IsNullOrEmpty(month)) q["month"] = month;
+                if (departmentId.HasValue) q["departmentId"] = departmentId.Value.ToString();
+                var qs = string.Join("&", q.Where(kv => !string.IsNullOrEmpty(kv.Value)).Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value!)}"));
+                var path = string.IsNullOrEmpty(qs) ? "Payroll/GetPayrollEmployees" : $"Payroll/GetPayrollEmployees?{qs}";
+
+                var result = await _apiClient.GetAsync<object>(path);
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "LoadPayrollEmployees failed");
+                return StatusCode(500, new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CalculatePayroll([FromBody] object payload)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+                var result = await _apiClient.PostAsync<object>("Payroll/CalculatePayroll", payload);
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CalculatePayroll failed");
+                return StatusCode(500, new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApprovePayroll([FromBody] object payload)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+                var result = await _apiClient.PostAsync<object>("Payroll/ApprovePayroll", payload);
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ApprovePayroll failed");
+                return StatusCode(500, new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GeneratePayslips([FromBody] object payload)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                    return Unauthorized(new { status = false, message = "Missing tokens." });
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+                var result = await _apiClient.PostAsync<object>("Payroll/GeneratePayslips", payload);
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GeneratePayslips failed");
+                return StatusCode(500, new { status = false, message = ex.Message });
+            }
+        }
     }
 
 }
