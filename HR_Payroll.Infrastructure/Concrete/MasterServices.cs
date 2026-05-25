@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using HR_Payroll.Core.DTO.Dept;
+using HR_Payroll.Core.DTO.Leave;
 using HR_Payroll.Core.Model.Master;
 using HR_Payroll.Core.Services;
 using HR_Payroll.Infrastructure.Data;
@@ -69,6 +70,38 @@ namespace HR_Payroll.Infrastructure.Concrete
                 };
             }
         }
+
+        public async Task<Result<List<EmployeeShiftDetails>>> GetAssignEmployeeShiftAsync(int EmployeeId)
+        {
+            try
+            {
+                using var conn = _context.Database.GetDbConnection();
+
+                var result = (await conn.QueryAsync<EmployeeShiftDetails>(
+                    "dbo.sp_GetEmployeeShiftDetails",
+                    new { EmployeeID = EmployeeId },
+                    commandType: CommandType.StoredProcedure
+                )).ToList();
+
+                return new Result<List<EmployeeShiftDetails>>
+                {
+                    IsSuccess = true,
+                    Message = "employee shift assignments fetched successfully.",
+                    Entity = result
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching employee shift assignments via stored procedure");
+                return new Result<List<EmployeeShiftDetails>>
+                {
+                    IsSuccess = false,
+                    Message = ex.Message,
+                    Entity = null
+                };
+            }
+        }
+
 
     }
 }

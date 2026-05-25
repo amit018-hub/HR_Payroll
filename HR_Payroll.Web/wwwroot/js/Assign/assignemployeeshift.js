@@ -517,4 +517,65 @@ function getSelectedValues(dropdownId) {
     return values;
 }
 
+$(document).ready(function () {
+    // Assign List → Open modal
+    $("#btnAssignList").on("click", function () {
+
+        $("#assignListModal").modal("show");
+
+        $("#assignListModalBody").load(
+            "/Assign/AssignEmployeeShiftList",
+            function () {
+                loadAssignListTable();
+            }
+        );
+    });  
+});
+
+function loadAssignListTable() {
+
+    if ($.fn.DataTable.isDataTable('#assignListTable')) {
+        $('#assignListTable').DataTable().destroy();
+    }
+
+    $('#assignListTable').DataTable({
+        processing: true,
+        ajax: {
+            url: '/Assign/GetAssignedShiftList',
+            type: 'GET'
+        },
+        columns: [
+            {
+                data: null,
+                render: function (d) {
+                    return `
+                        <div>
+                            <strong>${d.employeeName}</strong><br/>
+                            <small class="text-muted">${d.employeeCode}</small>
+                        </div>`;
+                }
+            },
+            { data: 'officeName' },
+            { data: 'shiftName' },
+            {
+                data: 'effectiveFrom',
+                render: d => moment(d).format('DD-MMM-YYYY')
+            },
+            {
+                data: 'effectiveTo',
+                render: d => d ? moment(d).format('DD-MMM-YYYY') : '<span class="text-muted">Open</span>'
+            },
+            {
+                data: 'isActive',
+                render: d =>
+                    d
+                        ? '<span class="badge bg-success">Active</span>'
+                        : '<span class="badge bg-secondary">Expired</span>'
+            }
+        ]
+    });
+}
+
+
+
 

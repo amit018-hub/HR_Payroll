@@ -1,0 +1,736 @@
+﻿@{
+    ViewData["Title"] = "ProjectTimesheet";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/assets/css/timesheet/weeklysheet.css" rel="stylesheet" asp-append-version="true" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Breadcrumb -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+                    <li class="breadcrumb-item"><a href="#">Attendance</a></li>
+                    <li class="breadcrumb-item active">Project Timesheet</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Project Timesheet</h4>
+        </div>
+    </div>
+</div>
+
+<div class="card assign-card">
+    <div class="card-body">
+
+        <!-- Week Navigator -->
+        <div class="week-nav">
+            <label>Current Week</label>
+            <button class="nav-btn" onclick="changeWeek(-1)">&#171;</button>
+            <div>
+                <div class="week-label" id="weekRange">--</div>
+                <div class="week-sub" id="weekSub">--</div>
+            </div>
+            <button class="nav-btn" onclick="changeWeek(1)">&#187;</button>
+            <select class="year-select" id="yearSelect" onchange="onYearChange(this.value)">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+            </select>
+            <button class="refresh-btn" onclick="refreshSheet()">
+                <span class="spin" id="spinIcon">&#8635;</span> Refresh
+            </button>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span class="emp-info">Employee &nbsp;<span id="empInfo">--</span></span>
+            <span class="emp-info">Approver – <span id="approverInfo">--</span></span>
+            <span class="status-badge" id="statusBadge">--</span>
+            <span class="view-history" onclick="viewHistory()">View History</span>
+        </div>
+
+        <!-- Employee Dark Row -->
+        <div class="emp-row">
+            <span class="emp-field">Employee</span>
+            <span class="emp-val" id="empNameFull">--</span>
+            <span style="margin-left:20px;" class="emp-field">Approver</span>
+            <span class="emp-val" id="approverFull">--</span>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <strong style="font-size:11px;color:#4a6080;margin-right:4px;">Legend:</strong>
+            <div class="legend-item"><div class="legend-dot present"></div>Present</div>
+            <div class="legend-item"><div class="legend-dot absent"></div>Absent</div>
+            <div class="legend-item"><div class="legend-dot holiday"></div>Public Holiday</div>
+            <div class="legend-item"><div class="legend-dot weekend"></div>Weekend</div>
+            <div class="legend-item"><div class="legend-dot today"></div>Today</div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingMsg" style="text-align:center;padding:30px;color:#2e5f8a;font-size:14px;">
+            ⏳ Loading timesheet...
+        </div>
+
+        <!-- No Data -->
+        <div id="noDataMsg" style="display:none;text-align:center;padding:30px;color:#888;font-size:14px;">
+            ❌ No timesheet data available for this week.
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap" id="tableSection" style="display:none;">
+            <table id="timesheetTable">
+                <thead>
+                    <tr id="dateRow">
+                        <th rowspan="2" style="min-width:220px;">Project / Activity / Category / Shift</th>
+                        <th rowspan="2" style="min-width:150px;">Remarks</th>
+                        <th rowspan="2" class="action-cell-header" style="min-width:60px;width:60px;">Action</th>
+                    </tr>
+                    <tr class="day-row" id="dayRow"></tr>
+                </thead>
+                <tbody id="timesheetBody"></tbody>
+            </table>
+
+            <div class="actions-bar">
+                <button class="btn btn-add" onclick="addRow()">&#43; Add Row</button>
+                <button class="btn btn-upload" onclick="uploadAttachment()">Upload</button>
+                <button class="btn btn-save" onclick="saveSheet()">Save</button>
+                <button class="btn btn-submit" onclick="submitSheet()">Submit</button>
+            </div>
+            <div class="summary-bar" id="summaryBar"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="ts-toast" id="tsToast"></div>
+
+<!-- History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a3a5c;color:#fff;">
+                <h5 class="modal-title">📋 Timesheet History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="historyBody">
+                <p class="text-center text-muted">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ════════════════════════════════════════════════════════════
+    //  WEEK HELPERS  – pure local calculation, no API dependency
+    // ════════════════════════════════════════════════════════════
+    function getCurrentMonday() {
+        const now  = new Date();
+        const day  = now.getDay();
+        const diff = (day === 0) ? -6 : 1 - day;
+        const mon  = new Date(now);
+        mon.setDate(now.getDate() + diff);
+        mon.setHours(0, 0, 0, 0);
+        return mon;
+    }
+
+    function getWeekDates(offset) {
+        const monday = getCurrentMonday();
+        monday.setDate(monday.getDate() + offset * 7);
+        return Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            return d;
+        });
+    }
+
+    function fmt(d) {
+        return d.toLocaleDateString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        }).replace(/ /g, '-');
+    }
+
+    function isoDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function updateWeekLabel(offset) {
+        const dates = getWeekDates(offset);
+        const label = `${fmt(dates[0])} – ${fmt(dates[6])}`;
+        document.getElementById('weekRange').innerText = label;
+        document.getElementById('weekSub').innerText   = label;
+    }
+
+    function getFirstMondayOfYear(year) {
+        const jan1 = new Date(year, 0, 1);
+        const day  = jan1.getDay();
+        const diff = (day === 0) ? 1 : (day === 1) ? 0 : (8 - day);
+        const mon  = new Date(year, 0, 1 + diff);
+        mon.setHours(0, 0, 0, 0);
+        return mon;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════════════════════════
+    let weekOffset  = 0;
+    let timesheetId = 0;
+    let rows        = [];
+    let dropdowns   = { projects: [], activities: [], categories: [], shifts: [] };
+    let HOLIDAYS    = new Set();
+
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    // Show label immediately
+    updateWeekLabel(weekOffset);
+
+    // ════════════════════════════════════════════════════════════
+    //  WEEK NAVIGATION
+    // ════════════════════════════════════════════════════════════
+    function changeWeek(dir) {
+        weekOffset += dir;
+        updateWeekLabel(weekOffset);
+
+        // Sync year dropdown
+        const year = getWeekDates(weekOffset)[0].getFullYear().toString();
+        const sel  = document.getElementById('yearSelect');
+        if ([...sel.options].some(o => o.value === year)) sel.value = year;
+
+        loadTimesheet();
+    }
+
+    function onYearChange(year) {
+        const firstMon = getFirstMondayOfYear(parseInt(year));
+        const curMon   = getCurrentMonday();
+        weekOffset = Math.round((firstMon - curMon) / (7 * 86400000));
+        updateWeekLabel(weekOffset);
+        loadTimesheet();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  DAY TYPE
+    // ════════════════════════════════════════════════════════════
+    function getDayType(d) {
+        const iso   = isoDate(d);
+        const day   = d.getDay();
+        const today = isoDate(new Date());
+        if (HOLIDAYS.has(iso))      return 'holiday';
+        if (day === 0 || day === 6) return 'weekend';
+        if (iso === today)          return 'today';
+        return 'present';
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  UI HELPERS
+    // ════════════════════════════════════════════════════════════
+    function setLoading(show) {
+        document.getElementById('loadingMsg').style.display   = show ? 'block' : 'none';
+        document.getElementById('tableSection').style.display = show ? 'none'  : 'block';
+        document.getElementById('noDataMsg').style.display    = 'none';
+    }
+
+    function showNoData() {
+        document.getElementById('loadingMsg').style.display   = 'none';
+        document.getElementById('tableSection').style.display = 'none';
+        document.getElementById('noDataMsg').style.display    = 'block';
+    }
+
+    // Build <option> list
+    // NOTE: shiftId is NVARCHAR (e.g. "DAY") not INT – use == not ===
+    function buildOptions(items, selectedId) {
+        return items.map(i =>
+            `<option value="${i.id}"${String(i.id) === String(selectedId) ? ' selected' : ''}>${i.displayName}</option>`
+        ).join('');
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  LOAD TIMESHEET  →  GET /TimeSheet/GetTimesheet?weekOffset=N
+    // ════════════════════════════════════════════════════════════
+    async function loadTimesheet() {
+        setLoading(true);
+        try {
+            const res    = await fetch(`/TimeSheet/GetTimesheet?weekOffset=${weekOffset}`);
+            const result = await res.json();
+
+            if (!result.status || !result.data) {
+                showNoData();
+                return;
+            }
+
+            const data = result.data;
+
+            // ── Cache dropdowns ───────────────────────────────────
+            if (data.projects?.length)   dropdowns.projects   = data.projects;
+            if (data.activities?.length) dropdowns.activities = data.activities;
+            if (data.categories?.length) dropdowns.categories = data.categories;
+            if (data.shifts?.length)     dropdowns.shifts     = data.shifts;
+
+            // ── Holidays ─────────────────────────────────────────
+            HOLIDAYS = new Set((data.holidays || []).map(h => h.split('T')[0]));
+
+            // ── Header ───────────────────────────────────────────
+            const h = data.header || {};
+            timesheetId = h.timesheetId || 0;
+
+            const empText      = `${h.employeeCode || ''} ${h.employeeName || ''}`.trim();
+            const approverText = `${h.approverCode || ''} ${h.approverName || ''}`.trim();
+
+            document.getElementById('empInfo').innerText      = empText      || '--';
+            document.getElementById('approverInfo').innerText = approverText || '--';
+            document.getElementById('empNameFull').innerText  = h.employeeName  || '--';
+            document.getElementById('approverFull').innerText =
+                h.approverCode ? `${h.approverCode} : ${h.approverName}` : '--';
+
+            const statusMap = {
+                DRAFT:'Draft', PENDING:'Pending with User',
+                APPROVED:'Approved', REJECTED:'Rejected'
+            };
+            document.getElementById('statusBadge').innerText =
+                statusMap[h.statusCode] || h.status || 'Draft';
+
+            // Always compute week label locally
+            updateWeekLabel(weekOffset);
+
+            // ── Rows ─────────────────────────────────────────────
+            //  SP seeds a default row if none exist, so data.rows
+            //  will always have ≥ 1 row on first load.
+            //  ShiftId is NVARCHAR (ShiftMaster.ShiftCode), keep as string.
+            rows = (data.rows || []).map(r => ({
+                rowId      : r.rowId      || 0,
+                projectId  : r.projectId  || null,
+                activityId : r.activityId || null,
+                categoryId : r.categoryId || null,
+                shiftId    : r.shiftId    || null,     // string e.g. "DAY"
+                remarks    : r.remarks    || '',
+                hours      : Array.isArray(r.hours) && r.hours.length === 7
+                    ? r.hours.map(v => (v === null || v === undefined) ? null : parseFloat(v))
+                    : Array(7).fill(null)
+            }));
+
+            // If API returns zero rows despite the SP seeding, add one locally
+            if (rows.length === 0) {
+                rows.push(makeDefaultRow());
+            }
+
+            document.getElementById('loadingMsg').style.display   = 'none';
+            document.getElementById('tableSection').style.display = 'block';
+            document.getElementById('noDataMsg').style.display    = 'none';
+
+            renderAll();
+
+        } catch (err) {
+            console.error('loadTimesheet error:', err);
+            showNoData();
+        }
+    }
+
+    // Build a client-side default row using first dropdown values
+    function makeDefaultRow() {
+        const lastRow = rows.length ? rows[rows.length - 1] : null;
+
+        return {
+            rowId      : 0,
+            projectId  : dropdowns.projects[0]?.id   ?? null,
+            activityId : dropdowns.activities[0]?.id ?? null,
+            categoryId : dropdowns.categories[0]?.id ?? null,
+            shiftId    : dropdowns.shifts[0]?.id     ?? null,
+            remarks    : lastRow?.remarks || '',
+            hours      : Array(7).fill(null)
+        };
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  RENDER
+    // ════════════════════════════════════════════════════════════
+    function renderAll() {
+        const dates = getWeekDates(weekOffset);
+        renderHeaders(dates);
+        renderBody(dates);
+        renderSummary(dates);
+    }
+
+    function renderHeaders(dates) {
+        const dateRow = document.getElementById('dateRow');
+        dateRow.querySelectorAll('th.date-th').forEach(t => t.remove());
+        const remarksTh = dateRow.querySelectorAll('th')[1];
+
+        dates.forEach(d => {
+            const th = document.createElement('th');
+            th.className   = `date-th ${getDayType(d)}`;
+            th.textContent = fmt(d);
+            dateRow.insertBefore(th, remarksTh);
+        });
+
+        const dayRow = document.getElementById('dayRow');
+        dayRow.innerHTML = '';
+        dates.forEach(d => {
+            const th = document.createElement('th');
+            const t  = getDayType(d);
+            th.textContent = DAY_NAMES[d.getDay()];
+            th.className   = (t === 'present') ? '' : t;
+            dayRow.appendChild(th);
+        });
+    }
+
+    function renderBody(dates) {
+        const tbody = document.getElementById('timesheetBody');
+        tbody.innerHTML = '';
+
+        rows.forEach((row, ri) => {
+            const tr = document.createElement('tr');
+
+            // ── Project cell: 4 dropdowns ─────────────────────────
+            //    ShiftId is a string (ShiftCode) – keep as string in state
+            const projTd = document.createElement('td');
+            projTd.className = 'proj-cell';
+            projTd.innerHTML = `
+                <select class="proj-select" onchange="rows[${ri}].projectId = +this.value">
+                    <option value="">-- Select Project --</option>
+                    ${buildOptions(dropdowns.projects, row.projectId)}
+                </select>
+                <select class="proj-select" onchange="rows[${ri}].activityId = +this.value">
+                    <option value="">-- Activity --</option>
+                    ${buildOptions(dropdowns.activities, row.activityId)}
+                </select>
+                <select class="proj-select" onchange="rows[${ri}].categoryId = +this.value">
+                    <option value="">-- Category --</option>
+                    ${buildOptions(dropdowns.categories, row.categoryId)}
+                </select>
+                <select class="proj-select" onchange="rows[${ri}].shiftId = this.value">
+                    <option value="">-- Shift --</option>
+                    ${buildOptions(dropdowns.shifts, row.shiftId)}
+                </select>`;
+            tr.appendChild(projTd);
+
+            // ── Day cells ─────────────────────────────────────────
+            dates.forEach((d, di) => {
+                const type     = getDayType(d);
+                const rawVal   = row.hours[di];
+                const hasHours = rawVal !== null && rawVal !== undefined && parseFloat(rawVal) > 0;
+                const isAbsent = !hasHours && (type === 'present' || type === 'today');
+                const cellType = (type === 'present' && isAbsent) ? 'absent' : type;
+                const dis      = (type === 'weekend' || type === 'holiday') ? 'disabled' : '';
+                const val      = rawVal != null ? parseFloat(rawVal).toFixed(2) : '';
+
+                let tag = '';
+                if      (type === 'holiday')          tag = `<span class="day-tag">Holiday</span>`;
+                else if (type === 'weekend')          tag = `<span class="day-tag">Weekend</span>`;
+                else if (type === 'today' && hasHours)tag = `<span class="day-tag">Today ✓</span>`;
+                else if (type === 'today')            tag = `<span class="day-tag">Today</span>`;
+                else if (isAbsent)                    tag = `<span class="day-tag">Absent</span>`;
+                else                                  tag = `<span class="day-tag">Present</span>`;
+
+                const td = document.createElement('td');
+                td.className = `day-cell ${cellType}`;
+                td.innerHTML = `
+                    <input class="time-input" type="number"
+                        min="0" max="24" step="0.5"
+                        value="${val}" placeholder="0.00" ${dis}
+                        onchange="onHoursChange(${ri}, ${di}, this.value)">
+                    ${tag}`;
+                tr.appendChild(td);
+            });
+
+            // ── Remarks ───────────────────────────────────────────
+            const remTd = document.createElement('td');
+            remTd.className = 'remarks-cell';
+            remTd.innerHTML = `<textarea
+                placeholder="Enter remarks..."
+                oninput="updateRemarks(${ri}, this.value)">${row.remarks}</textarea>`;
+            tr.appendChild(remTd);
+
+            // ── Action cell ───────────────────────────────────────
+            const actTd = document.createElement('td');
+            actTd.className = 'action-cell';
+            actTd.innerHTML = `
+                <div class="action-icons">
+                    <button class="icon-btn ref-btn" title="Reset row" onclick="resetRow(${ri})">&#8635;</button>
+                    <button class="icon-btn del-btn" title="Delete row" onclick="deleteRow(${ri})">&#128465;</button>
+                </div>`;
+            tr.appendChild(actTd);
+
+            tbody.appendChild(tr);
+        });
+
+        // ── Total row ─────────────────────────────────────────────
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'total-row';
+
+        const lbl = document.createElement('td');
+        lbl.className = 'proj-cell';
+        lbl.innerHTML = '<strong style="font-size:12px;">Total Hours</strong>';
+        totalTr.appendChild(lbl);
+
+        dates.forEach((d, di) => {
+            const td = document.createElement('td');
+            td.className = `day-cell ${getDayType(d)}`;
+            td.style.textAlign = 'center';
+            const total = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
+            td.innerHTML = `<span class="total-hours">${total > 0 ? total.toFixed(2) : '—'}</span>`;
+            totalTr.appendChild(td);
+        });
+
+        const remT = document.createElement('td'); remT.className = 'remarks-cell';
+        const actT = document.createElement('td'); actT.className = 'action-cell';
+        totalTr.appendChild(remT);
+        totalTr.appendChild(actT);
+        tbody.appendChild(totalTr);
+    }
+
+    function renderSummary(dates) {
+        if (!dates) dates = getWeekDates(weekOffset);
+        let totalHrs = 0, presentDays = 0, absentDays = 0, holidays = 0, weekends = 0;
+        dates.forEach((d, di) => {
+            const type = getDayType(d);
+            if (type === 'holiday') { holidays++; return; }
+            if (type === 'weekend') { weekends++; return; }
+            const dayTotal = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
+            if (dayTotal > 0) { presentDays++; totalHrs += dayTotal; } else absentDays++;
+        });
+        document.getElementById('summaryBar').innerHTML = `
+            <div class="s-item">Total Hours: <span>${totalHrs.toFixed(2)}</span></div>
+            <div class="s-item">Present Days: <span>${presentDays}</span></div>
+            <div class="s-item">Absent Days: <span>${absentDays}</span></div>
+            <div class="s-item">Holidays: <span>${holidays}</span></div>
+            <div class="s-item">Weekends: <span>${weekends}</span></div>`;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  HOURS CHANGE – update cell without full re-render
+    // ════════════════════════════════════════════════════════════
+    function onHoursChange(ri, di, value) {
+        rows[ri].hours[di] = value ? parseFloat(value) : null;
+
+        const dates    = getWeekDates(weekOffset);
+        const type     = getDayType(dates[di]);
+        const hasHours = value && parseFloat(value) > 0;
+        const isAbsent = !hasHours && type === 'present';
+        const cellType = isAbsent ? 'absent' : type;
+
+        const bodyRows  = document.querySelectorAll('#timesheetBody tr:not(.total-row)');
+        const targetRow = bodyRows[ri];
+        if (targetRow) {
+            const cell = targetRow.querySelectorAll('.day-cell')[di];
+            if (cell) {
+                cell.className = `day-cell ${cellType}`;
+                const tag = cell.querySelector('.day-tag');
+                if (tag) {
+                    if      (type === 'holiday')          tag.textContent = 'Holiday';
+                    else if (type === 'weekend')          tag.textContent = 'Weekend';
+                    else if (type === 'today' && hasHours)tag.textContent = 'Today ✓';
+                    else if (type === 'today')            tag.textContent = 'Today';
+                    else if (isAbsent)                    tag.textContent = 'Absent';
+                    else                                  tag.textContent = 'Present';
+                }
+            }
+            // Update total cell for this column
+            const totals = document.querySelectorAll('#timesheetBody tr.total-row .day-cell');
+            if (totals[di]) {
+                const total = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
+                const span  = totals[di].querySelector('.total-hours');
+                if (span) span.textContent = total > 0 ? total.toFixed(2) : '—';
+            }
+        }
+        renderSummary();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  ADD ROW
+    // ════════════════════════════════════════════════════════════
+    function addRow() {
+        rows.push(makeDefaultRow());
+        renderAll();
+        showToast('✅ New row added');
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SAVE  →  POST /TimeSheet/SaveTimesheet
+    // ════════════════════════════════════════════════════════════
+    async function saveSheet() {
+        if (rows.length === 0) { showToast('⚠️ Nothing to save'); return; }
+
+        const payload = {
+            timesheetId: timesheetId || 0,
+            weekOffset: weekOffset || 0,
+            rows: rows.map((r, i) => ({
+                rowId      : r.rowId      || 0,
+                projectId  : r.projectId  || 0,
+                activityId : r.activityId || 0,
+                categoryId : r.categoryId || 0,
+                shiftId    : r.shiftId    || '',   // string ShiftCode
+                remarks    : r.remarks    || '',
+                sortOrder  : i + 1,
+                hours      : r.hours.map(h => h ?? null)
+            }))
+        };
+
+        try {
+            const res    = await fetch('/TimeSheet/SaveTimesheet', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (!result.status) { showToast('❌ ' + (result.message || 'Save failed')); return; }
+            if (result.data?.timesheetId[0]) timesheetId = result.data.timesheetId[0];
+            showToast('💾 Saved successfully');
+        } catch (err) {
+            console.error('saveSheet:', err);
+            showToast('❌ Save failed');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SUBMIT
+    // ════════════════════════════════════════════════════════════
+    async function submitSheet() {
+        if (!confirm('Submit timesheet for approval?')) return;
+        await saveSheet();
+        console.log(timesheetId,"8----");
+        try {
+            const res    = await fetch('/TimeSheet/SubmitTimesheet', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ timesheetId })
+            });
+            const result = await res.json();
+            if (!result.status) { showToast('❌ ' + (result.message || 'Submit failed')); return; }
+            document.getElementById('statusBadge').innerText = 'Pending with User';
+            showToast('✅ Submitted for approval');
+        } catch (err) {
+            console.error('submitSheet:', err);
+            showToast('❌ Submit failed');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  DELETE ROW
+    // ════════════════════════════════════════════════════════════
+    async function deleteRow(index) {
+        if (rows.length === 1) { showToast('⚠️ At least one row is required'); return; }
+        const row = rows[index];
+
+        if (!row.rowId) {
+            rows.splice(index, 1);
+            renderAll();
+            showToast('🗑️ Row removed');
+            return;
+        }
+
+        if (!confirm('Delete this row?')) return;
+        try {
+            const res    = await fetch(`/TimeSheet/DeleteRow?rowId=${row.rowId}`, { method: 'POST' });
+            const result = await res.json();
+            if (!result.status) { showToast('❌ ' + (result.message || 'Delete failed')); return; }
+            rows.splice(index, 1);
+            renderAll();
+            showToast('🗑️ Row deleted');
+        } catch (err) {
+            console.error('deleteRow:', err);
+            showToast('❌ Delete failed');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  RESET ROW
+    // ════════════════════════════════════════════════════════════
+    async function resetRow(index) {
+        const row = rows[index];
+        if (!row.rowId) {
+            rows[index].hours   = Array(7).fill(null);
+            rows[index].remarks = '';
+            renderAll();
+            showToast('🔄 Row reset');
+            return;
+        }
+        try {
+            const res    = await fetch(`/TimeSheet/ResetRow?rowId=${row.rowId}`, { method: 'POST' });
+            const result = await res.json();
+            if (!result.status) { showToast('❌ ' + (result.message || 'Reset failed')); return; }
+            rows[index].hours   = Array(7).fill(null);
+            rows[index].remarks = '';
+            renderAll();
+            showToast('🔄 Row reset');
+        } catch (err) {
+            console.error('resetRow:', err);
+            showToast('❌ Reset failed');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  REFRESH
+    // ════════════════════════════════════════════════════════════
+    function refreshSheet() {
+        const spin = document.getElementById('spinIcon');
+        spin.style.transition = 'transform 0.65s ease';
+        spin.style.transform  = 'rotate(360deg)';
+        setTimeout(() => { spin.style.transform = ''; spin.style.transition = ''; }, 700);
+        loadTimesheet();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  VIEW HISTORY
+    // ════════════════════════════════════════════════════════════
+    async function viewHistory() {
+        if (!timesheetId) { showToast('⚠️ No saved timesheet yet'); return; }
+        document.getElementById('historyBody').innerHTML =
+            '<p class="text-center text-muted">Loading...</p>';
+        new bootstrap.Modal(document.getElementById('historyModal')).show();
+
+        try {
+            const res    = await fetch(`/TimeSheet/GetHistory?timesheetId=${timesheetId}`);
+            const result = await res.json();
+
+            if (!result.status || !result.data?.length) {
+                document.getElementById('historyBody').innerHTML =
+                    '<p class="text-center text-muted">No history found.</p>';
+                return;
+            }
+
+            const trs = result.data.map(l => `
+                <tr>
+                    <td><span class="badge bg-secondary">${l.actionType ?? '—'}</span></td>
+                    <td>${l.actionByName ?? '—'} <small class="text-muted">(${l.actionByCode ?? ''})</small></td>
+                    <td>${l.actionOn ? new Date(l.actionOn).toLocaleString() : '—'}</td>
+                    <td>${l.remarks ?? '—'}</td>
+                </tr>`).join('');
+
+            document.getElementById('historyBody').innerHTML = `
+                <table class="table table-sm table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr><th>Action</th><th>By</th><th>Date / Time</th><th>Remarks</th></tr>
+                    </thead>
+                    <tbody>${trs}</tbody>
+                </table>`;
+        } catch {
+            document.getElementById('historyBody').innerHTML =
+                '<p class="text-center text-danger">Failed to load history.</p>';
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  UPLOAD / TOAST
+    // ════════════════════════════════════════════════════════════
+    function uploadAttachment() { showToast('📎 Upload feature coming soon'); }
+
+    function showToast(msg) {
+        const t = document.getElementById('tsToast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function updateRemarks(index, value) {
+        if (!rows[index]) return;
+        rows[index].remarks = value;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  INIT
+    // ════════════════════════════════════════════════════════════
+    loadTimesheet();
+</script>

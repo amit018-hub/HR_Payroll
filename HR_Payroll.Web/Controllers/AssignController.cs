@@ -1,6 +1,7 @@
 ﻿using HR_Payroll.Core.DTO.Dept;
 using HR_Payroll.Core.DTO.Master;
 using HR_Payroll.Core.Model.DataTable;
+using HR_Payroll.Core.Model.Leave;
 using HR_Payroll.Core.Model.Master;
 using HR_Payroll.Core.Services;
 using HR_Payroll.Web.CommonClients;
@@ -113,7 +114,7 @@ namespace HR_Payroll.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception in GetEmployeeShifts");
+                _logger.LogError(ex, "Exception in");
                 return StatusCode(500, new
                 {
                     status = false,
@@ -410,6 +411,56 @@ namespace HR_Payroll.Web.Controllers
                 {
                     status = false,
                     message = ex.Message
+                });
+            }
+        }
+
+        public IActionResult AssignEmployeeShiftList() => PartialView("AssignEmployeeShiftList.cshtml");
+
+        public async Task<IActionResult> GetAssignedShiftList()
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new
+                    {
+                        status = false,
+                        message = "Missing access or refresh token."
+                    });
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.GetAsync<List<EmployeeShiftDetails>>("Master/GetAllAssignShift");
+
+                if (!result.status)
+                {
+                    _logger.LogWarning("Failed to retrieve leave requests: {Message}", result.message);
+                    return StatusCode(500, new
+                    {
+                        status = false,
+                        message = result.message
+                    });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    message = "employee shifts retrieved successfully.",
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in GetAssignedShiftList");
+                return StatusCode(500, new
+                {
+                    status = false,
+                    message = "An error occurred while retrieving employee shifts."
                 });
             }
         }

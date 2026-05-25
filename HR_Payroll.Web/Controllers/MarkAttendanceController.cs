@@ -430,6 +430,7 @@ namespace HR_Payroll.Web.Controllers
         }
 
         [HttpGet]
+
         public async Task<IActionResult> GetAttendanceHistory(DateTime? attendanceDate)
         {
             var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
@@ -459,6 +460,12 @@ namespace HR_Payroll.Web.Controllers
                 data = result.data
             });
         }
+
+        #endregion
+
+        #region---------------------Project Timesheet--------------------------------
+
+        public IActionResult ProjectTimesheet() => View();
 
         #endregion
     }

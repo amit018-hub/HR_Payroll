@@ -28,10 +28,16 @@ namespace HR_Payroll.API.Controllers
 
         }
 
+        private int GetEmployeeIdFromClaims()
+        {
+            var empIdClaim = HttpContext?.User.FindFirst("EmployeeId")?.Value;
+            return int.TryParse(empIdClaim, out int empId) ? empId : 0;
+        }
+
         [HttpPost]
         [Route("AssignShift")]
         [Authorize(Roles = "Admin,HR,Manager,Team Lead")]
-        public async Task<IActionResult> ApplyLeave([FromBody] AssignEmployeeShiftRequest model)
+        public async Task<IActionResult> AssignShift([FromBody] AssignEmployeeShiftRequest model)
         {
             if (model == null)
             {
@@ -75,6 +81,46 @@ namespace HR_Payroll.API.Controllers
                 });
             }
         }
+
+        [HttpGet]
+        [Route("GetAllAssignShift")]
+        [Authorize(Roles = "Admin,HR,Manager,Team Lead")]
+        public async Task<IActionResult> GetAllAssignShift()
+        {
+            try
+            {
+                var employeeId = 0;
+                var result = await _masterRepository.GetAssignEmployeeShiftAsync(employeeId);
+
+                if (!result.IsSuccess)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = result.Message ?? "Failed to retrieve employee shift assignments",
+                        data = new List<object>()
+                    });
+                }
+
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
+                    message = result.Message ?? "Employee shift assignments retrieved successfully",
+                    data = result.Entity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving employee shift assignments");
+                return StatusCode(500, new DataResponse<object>
+                {
+                    status = false,
+                    message = "An error occurred while processing your request.",
+                    data = new List<object>()
+                });
+            }
+        }
+
 
     }
 }

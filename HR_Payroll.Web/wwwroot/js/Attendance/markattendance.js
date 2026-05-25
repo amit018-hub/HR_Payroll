@@ -15,6 +15,7 @@ let isLoadingStatus = false;
 let cachedIP = null;
 let ipCacheTime = null;
 let lastFocusTime = Date.now();
+let currentRequest = null;
 
 $(function () {
     updateDateTimeBadge();
@@ -158,22 +159,33 @@ async function loadAttendanceStatus() {
     }
 
     isLoadingStatus = true;
+
+    if (currentRequest && currentRequest.readyState !== 4) {
+        currentRequest.abort();
+    }
+
     $('.loader').removeClass('hide');
     try {
-        const response = await $.ajax({
+        currentRequest = $.ajax({
             url: '/MarkAttendance/GetCurrentStatus',
             type: 'GET',
             cache: false,
-            timeout: 10000
+            timeout: 8000 // slightly reduced
         });
+
+        const response = await currentRequest;
 
         handleAttendanceStatusResponse(response);
 
     } catch (error) {
-        console.error('Error loading attendance status:', error);
-        handleStatusLoadFailure();
+        if (error.statusText !== 'abort') {
+            console.error('Error loading attendance status:', error);
+            handleStatusLoadFailure();
+        }
     } finally {
         isLoadingStatus = false;
+        currentRequest = null;
+        $('.loader').addClass('hide');
     }
 }
 
