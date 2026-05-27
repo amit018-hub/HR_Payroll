@@ -283,4 +283,137 @@ public class TimeSheetServices : ITimeSheetServices
             return Result<IEnumerable<TimesheetAuditDto>>.Failure("Failed to retrieve history.");
         }
     }
+
+    // ════════════════════════════════════════════════════════
+    //  GET TEAM TIMESHEETS
+    //  Returns { holidays[], team[] } consumed by mgrLoad()
+    // ════════════════════════════════════════════════════════
+    public async Task<Result<TeamTimesheetResponse>> GetTeamTimesheetsAsync(
+        string approverCode, int weekOffset)
+    {
+        try
+        {
+            var weekStart = ComputeWeekStart(weekOffset);
+
+            using var db = CreateConnection();
+            using var multi = await db.QueryMultipleAsync(
+                "sp_GetTeamTimesheets",
+                new { ApproverCode = approverCode, WeekStart = weekStart },
+                commandType: CommandType.StoredProcedure);
+
+            // Result-set ①: holidays
+            var holidays = (await multi.ReadAsync<dynamic>())
+                .Select(h => (string)h.HolidayDate)
+                .ToList();
+
+            // Result-set ②: team member summaries
+            var team = (await multi.ReadAsync<TeamMemberSummary>())
+                .Select(t => new TeamMemberSummary
+                {
+                    EmployeeId = t.EmployeeId,
+                    EmployeeCode = t.EmployeeCode,
+                    EmployeeName = t.EmployeeName,
+                    Designation = t.Designation,
+                    TimesheetId = t.TimesheetId,
+                    WeekStartDate = t.WeekStartDate != null
+                        ? Convert.ToDateTime(t.WeekStartDate).ToString("yyyy-MM-dd"): string.Empty,
+
+                    WeekEndDate = t.WeekEndDate != null
+                        ? Convert.ToDateTime(t.WeekEndDate).ToString("yyyy-MM-dd"): string.Empty,
+                    StatusCode = t.StatusCode ?? "DRAFT",
+                    SubmittedOn = t.SubmittedOn,
+                    RejectionNote = t.RejectionNote,
+                    TotalHours = t.TotalHours,
+                    PresentDays = t.PresentDays,
+                    TotalRows = t.TotalRows
+                }).ToList();
+
+            return Result<TeamTimesheetResponse>.Success(
+                new TeamTimesheetResponse { Holidays = holidays, Team = team },
+                "Team timesheets retrieved.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetTeamTimesheetsAsync failed for {Code} offset {Off}",
+                approverCode, weekOffset);
+            return Result<TeamTimesheetResponse>.Failure("Failed to load team timesheets.");
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  GET TIMESHEET BY ID
+    //  Returns { header, rows } consumed by mgrSelectEmployee()
+    // ════════════════════════════════════════════════════════
+    public async Task<Result<TeamTimesheetDetail>> GetTimesheetByIdAsync(
+        int timesheetId, int employeeId, string approverCode)
+    {
+        try
+        {
+            using var db = CreateConnection();
+            using var multi = await db.QueryMultipleAsync(
+                "sp_GetTimesheetById",
+                new { TimesheetId = timesheetId, EmployeeId = employeeId, ApproverCode = approverCode },
+                commandType: CommandType.StoredProcedure);
+
+            var header = await multi.ReadFirstOrDefaultAsync<TeamTimesheetHeader>();
+            var rows = (await multi.ReadAsync<TeamTimesheetRow>()).ToList();
+
+            if (header == null)
+                return Result<TeamTimesheetDetail>.Failure("Timesheet not found or access denied.");
+
+            return Result<TeamTimesheetDetail>.Success(
+                new TeamTimesheetDetail { Header = header, Rows = rows },
+                "Detail retrieved.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetTimesheetByIdAsync failed for ts={TsId} emp={EmpId}",
+                timesheetId, employeeId);
+            return Result<TeamTimesheetDetail>.Failure("Failed to load timesheet detail.");
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  APPROVE / REJECT
+    //  Single method for both actions (matches JS design)
+    // ════════════════════════════════════════════════════════
+    public async Task<Result<object>> ApproveRejectAsync(ApproveRejectRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.ApproverCode))
+                return Result<object>.Failure("Approver code is required.");
+
+            if (request.Action != "APPROVED" && request.Action != "REJECTED")
+                return Result<object>.Failure("Invalid action. Use APPROVED or REJECTED.");
+
+            if (request.Action == "REJECTED" && string.IsNullOrWhiteSpace(request.Remarks))
+                return Result<object>.Failure("Rejection reason is required.");
+
+            using var db = CreateConnection();
+            var r = await db.QueryFirstAsync(
+                "sp_ApproveRejectTimesheet",
+                new
+                {
+                    TimesheetId = request.TimesheetId,
+                    ApproverCode = request.ApproverCode,
+                    Action = request.Action,
+                    Remarks = request.Remarks
+                },
+                commandType: CommandType.StoredProcedure);
+
+            bool ok = (bool)(r.Success ?? false);
+            string msg = (string)(r.Message ?? string.Empty);
+
+            return ok
+                ? Result<object>.Success(null, msg)
+                : Result<object>.Failure(msg);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ApproveRejectAsync failed for ts={TsId} action={Action}",
+                request.TimesheetId, request.Action);
+            return Result<object>.Failure("Action failed.");
+        }
+    }
 }

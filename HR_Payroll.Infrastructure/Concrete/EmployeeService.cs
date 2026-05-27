@@ -133,9 +133,9 @@ namespace HR_Payroll.Infrastructure.Concrete
          List<SalaryComponentViewModel>? components,
          string? profileImage)
         {
-            
+
             var strategy = _context.Database.CreateExecutionStrategy();
-       
+
             return await strategy.ExecuteAsync(async () =>
             {
                 string? newEmployeeCode = null;
@@ -231,6 +231,9 @@ namespace HR_Payroll.Infrastructure.Concrete
                             UANNo = basic.UANNo,
                             ESINo = basic.ESINo,
                             NoticePeriod = basic.NoticePeriod,
+                            ProfilePic = profileImage,
+                            IsActive = true,
+                            Del_Flg = "N",
                             CreatedDate = DateTime.Now,
                             CreatedBy = basic.CreatedBy,
                             ModifiedBy = basic.CreatedBy,
@@ -253,6 +256,8 @@ namespace HR_Payroll.Infrastructure.Concrete
                         {
                             EmployeeID = employeeId,
                             Amount = payroll.SalaryPerMonth,
+                            IsActive = 1,
+                            Del_Flg = "N",
                             CreatedDate = DateTime.Now,
                             CreatedBy = basic.CreatedBy,
                             ModifiedBy = basic.CreatedBy,
@@ -283,6 +288,7 @@ namespace HR_Payroll.Infrastructure.Concrete
                             BeneficiaryName = bank.BeneficiaryName,
                             AccountNo = bank.AccountNumber,
                             IFSC = bank.IFSCCode,
+                            IsActive = true,
                             CreatedOn = DateTime.Now,
                             CreatedBy = basic.CreatedBy,
                             ModifiedBy = basic.CreatedBy
@@ -323,7 +329,8 @@ namespace HR_Payroll.Infrastructure.Concrete
                                 CreatedDate = DateTime.Now,
                                 CreatedBy = basic.CreatedBy,
                                 ModifiedBy = basic.CreatedBy,
-                                IsActive = 1
+                                IsActive = 1,
+                                Del_Flg = "N"
                             });
                         }
 
@@ -355,28 +362,16 @@ namespace HR_Payroll.Infrastructure.Concrete
 
             try
             {
-                // Get last EmployeeId safely
-                var lastEmployeeCode = await _context.Employees
-                    .OrderByDescending(e => e.EmployeeID)
-                    .Select(e => e.EmployeeCode)
-                    .FirstOrDefaultAsync();
+                // Count existing employees
+                int employeeCount = await _context.Employees.CountAsync();
 
-                int nextNumber = 1;
+                int nextNumber = employeeCount + 1;
 
-
-                if (!string.IsNullOrEmpty(lastEmployeeCode) && lastEmployeeCode.StartsWith(prefix))
-                {
-                    string numericPart = lastEmployeeCode.Substring(prefix.Length);
-                    if (int.TryParse(numericPart, out int parsed))
-                    {
-                        nextNumber = parsed + 1;
-                    }
-                }
-
-                var newEmployeeId = $"{prefix}-{nextNumber:D4}";
+                var newEmployeeCode = $"{prefix}-{nextNumber:D4}";
 
                 await transaction.CommitAsync();
-                return newEmployeeId;
+
+                return newEmployeeCode;
             }
             catch
             {

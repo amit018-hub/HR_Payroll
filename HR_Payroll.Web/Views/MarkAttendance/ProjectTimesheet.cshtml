@@ -6,6 +6,698 @@
 <link href="~/assets/css/timesheet/weeklysheet.css" rel="stylesheet" asp-append-version="true" />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+<style>
+    /* ══════════════════════════════════════
+       TAB CHROME
+    ══════════════════════════════════════ */
+    .ts-tab-strip {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #d0dce8;
+        margin-bottom: 0;
+    }
+
+    .ts-tab-btn {
+        padding: 10px 28px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'IBM Plex Sans', sans-serif;
+        border: none;
+        border-bottom: 3px solid transparent;
+        background: transparent;
+        color: #7a94aa;
+        cursor: pointer;
+        letter-spacing: .3px;
+        transition: color .18s, border-color .18s;
+        margin-bottom: -2px;
+    }
+
+        .ts-tab-btn.active {
+            color: #1a3a5c;
+            border-bottom-color: #1a3a5c;
+        }
+
+        .ts-tab-btn:hover:not(.active) {
+            color: #2e5f8a;
+        }
+
+    .ts-tab-pane {
+        display: none;
+    }
+
+        .ts-tab-pane.active {
+            display: block;
+        }
+
+    /* ══════════════════════════════════════
+       SHARED COMPONENTS (week-nav, status-bar, etc.)
+       — same as original, scoped to .ts-tab-pane
+    ══════════════════════════════════════ */
+    .week-nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0 14px;
+        flex-wrap: wrap;
+    }
+
+        .week-nav label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4a6080;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+    .nav-btn {
+        background: #1a3a5c;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+        .nav-btn:hover {
+            background: #2e5f8a;
+        }
+
+    .week-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a3a5c;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .week-sub {
+        font-size: 11px;
+        color: #7a94aa;
+    }
+
+    .year-select {
+        padding: 4px 8px;
+        border: 1px solid #c8d8e8;
+        border-radius: 4px;
+        font-size: 13px;
+        background: #fff;
+        color: #1a3a5c;
+    }
+
+    .refresh-btn {
+        background: #e8f0f8;
+        border: 1px solid #b8cfe0;
+        border-radius: 4px;
+        padding: 5px 12px;
+        font-size: 12px;
+        color: #2e5f8a;
+        cursor: pointer;
+    }
+
+        .refresh-btn:hover {
+            background: #d0e4f2;
+        }
+
+    .spin {
+        display: inline-block;
+    }
+
+    .status-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: #f0f6fc;
+        border: 1px solid #d0e4f0;
+        border-radius: 6px;
+        padding: 8px 16px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+    }
+
+    .emp-info {
+        font-size: 12px;
+        color: #4a6080;
+    }
+
+    .status-badge {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 12px;
+        background: #d0e8ff;
+        color: #1a3a5c;
+        letter-spacing: .3px;
+    }
+
+    .view-history {
+        font-size: 12px;
+        color: #2e5f8a;
+        text-decoration: underline;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+
+    .emp-row {
+        background: #1a3a5c;
+        color: #fff;
+        border-radius: 6px 6px 0 0;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .emp-field {
+        font-size: 11px;
+        color: #8ab0cc;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .emp-val {
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .legend {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 8px 0 10px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #4a6080;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+        .legend-dot.present {
+            background: #4caf8a;
+        }
+
+        .legend-dot.absent {
+            background: #f28b5e;
+        }
+
+        .legend-dot.holiday {
+            background: #7b8fc0;
+        }
+
+        .legend-dot.weekend {
+            background: #c0c8d8;
+        }
+
+        .legend-dot.today {
+            background: #f5c842;
+        }
+
+    .table-wrap {
+        overflow-x: auto;
+        border-radius: 0 0 8px 8px;
+        border: 1px solid #d0dce8;
+    }
+
+    #emp-timesheetTable, #mgr-timesheetTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: #fff;
+    }
+
+        #emp-timesheetTable th, #mgr-timesheetTable th {
+            background: #1a3a5c;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: center;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        #emp-timesheetTable td, #mgr-timesheetTable td {
+            padding: 6px 8px;
+            border: 1px solid #e0eaf2;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+    .day-cell.present {
+        background: #f0fff8;
+    }
+
+    .day-cell.absent {
+        background: #fff3ee;
+    }
+
+    .day-cell.holiday {
+        background: #f0f0fc;
+    }
+
+    .day-cell.weekend {
+        background: #f4f6f8;
+    }
+
+    .day-cell.today {
+        background: #fffce0;
+        border-left: 2px solid #f5c842;
+    }
+
+    .date-th.present {
+        background: #174d6a;
+    }
+
+    .date-th.absent {
+        background: #174d6a;
+    }
+
+    .date-th.holiday {
+        background: #2a2e5c;
+    }
+
+    .date-th.weekend {
+        background: #263248;
+    }
+
+    .date-th.today {
+        background: #5a4a00;
+    }
+
+    .time-input {
+        width: 62px;
+        text-align: center;
+        border: 1px solid #c8d8e8;
+        border-radius: 4px;
+        padding: 3px 4px;
+        font-size: 12px;
+        font-family: 'IBM Plex Mono', monospace;
+        background: #f8fcff;
+    }
+
+        .time-input:disabled {
+            background: #f0f0f4;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .time-input:focus {
+            outline: 2px solid #2e5f8a;
+            border-color: #2e5f8a;
+        }
+
+    .day-tag {
+        display: block;
+        font-size: 9px;
+        color: #7a94aa;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        margin-top: 2px;
+    }
+
+    .proj-cell {
+        text-align: left !important;
+        min-width: 220px;
+    }
+
+    .proj-select {
+        display: block;
+        width: 100%;
+        margin-bottom: 3px;
+        border: 1px solid #c8d8e8;
+        border-radius: 3px;
+        padding: 3px 6px;
+        font-size: 11px;
+        color: #1a3a5c;
+        background: #f8fcff;
+    }
+
+        .proj-select:last-child {
+            margin-bottom: 0;
+        }
+
+    .remarks-cell {
+        min-width: 130px;
+        text-align: left !important;
+    }
+
+        .remarks-cell textarea {
+            width: 100%;
+            min-height: 60px;
+            border: 1px solid #c8d8e8;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 11px;
+            resize: vertical;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+    .action-cell-header, .action-cell {
+        width: 60px;
+        min-width: 60px;
+    }
+
+    .action-icons {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .icon-btn {
+        background: none;
+        border: 1px solid #c8d8e8;
+        border-radius: 4px;
+        padding: 3px 6px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    .ref-btn:hover {
+        background: #e8f4ff;
+        border-color: #2e5f8a;
+    }
+
+    .del-btn:hover {
+        background: #fff0ee;
+        border-color: #e05a3a;
+    }
+
+    .total-row td {
+        background: #e8f0f8 !important;
+        font-weight: 700;
+    }
+
+    .total-hours {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 13px;
+        color: #1a3a5c;
+        font-weight: 700;
+    }
+
+    .actions-bar {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        background: #f8fafc;
+        border-top: 1px solid #e0eaf2;
+    }
+
+    .btn {
+        padding: 7px 18px;
+        border: none;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-add {
+        background: #e8f4ff;
+        color: #1a3a5c;
+        border: 1px solid #b8d8f0;
+    }
+
+    .btn-upload {
+        background: #e8fff4;
+        color: #1a5c3a;
+        border: 1px solid #b8f0d4;
+    }
+
+    .btn-save {
+        background: #2e5f8a;
+        color: #fff;
+    }
+
+    .btn-submit {
+        background: #1a3a5c;
+        color: #fff;
+    }
+
+    .btn:hover {
+        opacity: .88;
+    }
+
+    .summary-bar {
+        display: flex;
+        gap: 16px;
+        padding: 10px 14px;
+        flex-wrap: wrap;
+        background: #f0f6fc;
+        border-top: 1px solid #d8e8f4;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .s-item {
+        font-size: 12px;
+        color: #4a6080;
+    }
+
+        .s-item span {
+            font-weight: 700;
+            color: #1a3a5c;
+            margin-left: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+    .ts-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #1a3a5c;
+        color: #fff;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 13px;
+        z-index: 9999;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity .25s, transform .25s;
+        pointer-events: none;
+    }
+
+        .ts-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    /* ══════════════════════════════════════
+       MANAGER TAB SPECIFICS
+    ══════════════════════════════════════ */
+    .mgr-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 0 14px;
+    }
+
+        .mgr-toolbar label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4a6080;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+    .mgr-select {
+        padding: 5px 10px;
+        border: 1px solid #c8d8e8;
+        border-radius: 4px;
+        font-size: 13px;
+        background: #fff;
+        color: #1a3a5c;
+        min-width: 200px;
+    }
+
+    .mgr-filter-btns {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+    }
+
+    .filter-btn {
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid #c8d8e8;
+        background: #f0f6fc;
+        color: #4a6080;
+        transition: all .15s;
+    }
+
+        .filter-btn.active {
+            background: #1a3a5c;
+            color: #fff;
+            border-color: #1a3a5c;
+        }
+
+        .filter-btn:hover:not(.active) {
+            background: #e0ecf8;
+        }
+
+    .emp-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .emp-card {
+        border: 2px solid #d0dce8;
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .emp-card:hover {
+            border-color: #2e5f8a;
+            box-shadow: 0 2px 10px rgba(30,80,130,.1);
+        }
+
+        .emp-card.selected {
+            border-color: #1a3a5c;
+            background: #f0f6fc;
+        }
+
+    .emp-card-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a3a5c;
+    }
+
+    .emp-card-code {
+        font-size: 11px;
+        color: #7a94aa;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .emp-card-status {
+        margin-top: 8px;
+    }
+
+    .status-pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .3px;
+        text-transform: uppercase;
+    }
+
+        .status-pill.DRAFT {
+            background: #e8e8f0;
+            color: #4a4a6a;
+        }
+
+        .status-pill.PENDING {
+            background: #fff3d0;
+            color: #7a5a00;
+        }
+
+        .status-pill.APPROVED {
+            background: #d4f5e2;
+            color: #1a5c3a;
+        }
+
+        .status-pill.REJECTED {
+            background: #ffe8e4;
+            color: #8a1a1a;
+        }
+
+    .mgr-detail-panel {
+        border: 1px solid #d0dce8;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .mgr-detail-header {
+        background: #1a3a5c;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+        .mgr-detail-header .emp-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .mgr-detail-header .week-lbl {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: #8ab0cc;
+            margin-left: auto;
+        }
+
+    .approve-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 12px 14px;
+        background: #f8fafc;
+        border-top: 1px solid #e0eaf2;
+    }
+
+        .approve-bar textarea {
+            flex: 1;
+            border: 1px solid #c8d8e8;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            resize: none;
+            min-height: 38px;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+    .btn-approve {
+        background: #1a5c3a;
+        color: #fff;
+    }
+
+    .btn-reject {
+        background: #8a1a1a;
+        color: #fff;
+    }
+
+    .btn-approve:hover {
+        background: #14472d;
+    }
+
+    .btn-reject:hover {
+        background: #6e1414;
+    }
+
+    .no-emp-selected {
+        text-align: center;
+        padding: 40px;
+        color: #7a94aa;
+        font-size: 13px;
+        background: #f8fafc;
+        border: 1px dashed #c8d8e8;
+        border-radius: 8px;
+    }
+</style>
+
 <!-- Breadcrumb -->
 <div class="row">
     <div class="col-sm-12">
@@ -23,93 +715,173 @@
 </div>
 
 <div class="card assign-card">
-    <div class="card-body">
+    <div class="card-body" style="padding-top: 0;">
 
-        <!-- Week Navigator -->
-        <div class="week-nav">
-            <label>Current Week</label>
-            <button class="nav-btn" onclick="changeWeek(-1)">&#171;</button>
-            <div>
-                <div class="week-label" id="weekRange">--</div>
-                <div class="week-sub" id="weekSub">--</div>
+        <!-- ── Tab Strip ── -->
+        <div class="ts-tab-strip">
+            <button class="ts-tab-btn active" onclick="switchTab('employee', this)">📋 Timesheet</button>
+            <button class="ts-tab-btn" id="approvalTabContainer" onclick="switchTab('manager',  this)">👥 Team Timesheets</button>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════
+             EMPLOYEE TAB
+        ══════════════════════════════════════════════════ -->
+        <div class="ts-tab-pane active" id="tab-employee" style="padding-top: 16px;">
+
+            <!-- Week Navigator -->
+            <div class="week-nav">
+                <label>Current Week</label>
+                <button class="nav-btn" onclick="emp.changeWeek(-1)">&#171;</button>
+                <div>
+                    <div class="week-label" id="emp-weekRange">--</div>
+                    <div class="week-sub" id="emp-weekSub">--</div>
+                </div>
+                <button class="nav-btn" onclick="emp.changeWeek(1)">&#187;</button>
+                <select class="year-select" id="emp-yearSelect" onchange="emp.onYearChange(this.value)">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <button class="refresh-btn" onclick="emp.refresh()">
+                    <span class="spin" id="emp-spinIcon">&#8635;</span> Refresh
+                </button>
             </div>
-            <button class="nav-btn" onclick="changeWeek(1)">&#187;</button>
-            <select class="year-select" id="yearSelect" onchange="onYearChange(this.value)">
-                <option value="2025">2025</option>
-                <option value="2026" selected>2026</option>
-                <option value="2027">2027</option>
-            </select>
-            <button class="refresh-btn" onclick="refreshSheet()">
-                <span class="spin" id="spinIcon">&#8635;</span> Refresh
-            </button>
-        </div>
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <span class="emp-info">Employee &nbsp;<span id="empInfo">--</span></span>
-            <span class="emp-info">Approver – <span id="approverInfo">--</span></span>
-            <span class="status-badge" id="statusBadge">--</span>
-            <span class="view-history" onclick="viewHistory()">View History</span>
-        </div>
-
-        <!-- Employee Dark Row -->
-        <div class="emp-row">
-            <span class="emp-field">Employee</span>
-            <span class="emp-val" id="empNameFull">--</span>
-            <span style="margin-left:20px;" class="emp-field">Approver</span>
-            <span class="emp-val" id="approverFull">--</span>
-        </div>
-
-        <!-- Legend -->
-        <div class="legend">
-            <strong style="font-size:11px;color:#4a6080;margin-right:4px;">Legend:</strong>
-            <div class="legend-item"><div class="legend-dot present"></div>Present</div>
-            <div class="legend-item"><div class="legend-dot absent"></div>Absent</div>
-            <div class="legend-item"><div class="legend-dot holiday"></div>Public Holiday</div>
-            <div class="legend-item"><div class="legend-dot weekend"></div>Weekend</div>
-            <div class="legend-item"><div class="legend-dot today"></div>Today</div>
-        </div>
-
-        <!-- Loading -->
-        <div id="loadingMsg" style="text-align:center;padding:30px;color:#2e5f8a;font-size:14px;">
-            ⏳ Loading timesheet...
-        </div>
-
-        <!-- No Data -->
-        <div id="noDataMsg" style="display:none;text-align:center;padding:30px;color:#888;font-size:14px;">
-            ❌ No timesheet data available for this week.
-        </div>
-
-        <!-- Table -->
-        <div class="table-wrap" id="tableSection" style="display:none;">
-            <table id="timesheetTable">
-                <thead>
-                    <tr id="dateRow">
-                        <th rowspan="2" style="min-width:220px;">Project / Activity / Category / Shift</th>
-                        <th rowspan="2" style="min-width:150px;">Remarks</th>
-                        <th rowspan="2" class="action-cell-header" style="min-width:60px;width:60px;">Action</th>
-                    </tr>
-                    <tr class="day-row" id="dayRow"></tr>
-                </thead>
-                <tbody id="timesheetBody"></tbody>
-            </table>
-
-            <div class="actions-bar">
-                <button class="btn btn-add" onclick="addRow()">&#43; Add Row</button>
-                <button class="btn btn-upload" onclick="uploadAttachment()">Upload</button>
-                <button class="btn btn-save" onclick="saveSheet()">Save</button>
-                <button class="btn btn-submit" onclick="submitSheet()">Submit</button>
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span class="emp-info">Employee &nbsp;<span id="emp-empInfo">--</span></span>
+                <span class="emp-info">Approver – <span id="emp-approverInfo">--</span></span>
+                <span class="status-badge" id="emp-statusBadge">--</span>
+                <span class="view-history" onclick="emp.viewHistory()">View History</span>
             </div>
-            <div class="summary-bar" id="summaryBar"></div>
+
+            <!-- Employee Dark Row -->
+            <div class="emp-row">
+                <span class="emp-field">Employee</span>
+                <span class="emp-val" id="emp-empNameFull">--</span>
+                <span style="margin-left:20px;" class="emp-field">Approver</span>
+                <span class="emp-val" id="emp-approverFull">--</span>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <strong style="font-size:11px;color:#4a6080;margin-right:4px;">Legend:</strong>
+                <div class="legend-item"><div class="legend-dot present"></div>Present</div>
+                <div class="legend-item"><div class="legend-dot absent"></div>Absent</div>
+                <div class="legend-item"><div class="legend-dot holiday"></div>Public Holiday</div>
+                <div class="legend-item"><div class="legend-dot weekend"></div>Weekend</div>
+                <div class="legend-item"><div class="legend-dot today"></div>Today</div>
+            </div>
+
+            <div id="emp-loadingMsg" style="text-align:center;padding:30px;color:#2e5f8a;font-size:14px;">⏳ Loading timesheet...</div>
+            <div id="emp-noDataMsg" style="display:none;text-align:center;padding:30px;color:#888;font-size:14px;">❌ No timesheet data available for this week.</div>
+
+            <div class="table-wrap" id="emp-tableSection" style="display:none;">
+                <table id="emp-timesheetTable">
+                    <thead>
+                        <tr id="emp-dateRow">
+                            <th rowspan="2" style="min-width:220px;">Project / Activity / Category / Shift</th>
+                            <th rowspan="2" style="min-width:150px;">Remarks</th>
+                            <th rowspan="2" class="action-cell-header">Action</th>
+                        </tr>
+                        <tr class="day-row" id="emp-dayRow"></tr>
+                    </thead>
+                    <tbody id="emp-timesheetBody"></tbody>
+                </table>
+                <div class="actions-bar">
+                    <button class="btn btn-add" onclick="emp.addRow()">&#43; Add Row</button>
+                    <button class="btn btn-upload" onclick="emp.uploadAttachment()">Upload</button>
+                    <button class="btn btn-save" onclick="emp.saveSheet()">Save</button>
+                    <button class="btn btn-submit" onclick="emp.submitSheet()">Submit</button>
+                </div>
+                <div class="summary-bar" id="emp-summaryBar"></div>
+            </div>
         </div>
 
-    </div>
+        <!-- ══════════════════════════════════════════════════
+             MANAGER TAB
+        ══════════════════════════════════════════════════ -->
+        <div class="ts-tab-pane" id="tab-manager" style="padding-top: 16px;">
+
+            <!-- Toolbar -->
+            <div class="mgr-toolbar">
+                <label>Week</label>
+                <button class="nav-btn" onclick="mgr.changeWeek(-1)">&#171;</button>
+                <div>
+                    <div class="week-label" id="mgr-weekRange">--</div>
+                </div>
+                <button class="nav-btn" onclick="mgr.changeWeek(1)">&#187;</button>
+                <select class="year-select" id="mgr-yearSelect" onchange="mgr.onYearChange(this.value)">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <button class="refresh-btn" onclick="mgr.refresh()">
+                    <span class="spin" id="mgr-spinIcon">&#8635;</span> Refresh
+                </button>
+                <div class="mgr-filter-btns">
+                    <button class="filter-btn active" onclick="mgr.setFilter('ALL',   this)">All</button>
+                    <button class="filter-btn" onclick="mgr.setFilter('PENDING',  this)">Pending</button>
+                    <button class="filter-btn" onclick="mgr.setFilter('APPROVED', this)">Approved</button>
+                    <button class="filter-btn" onclick="mgr.setFilter('REJECTED', this)">Rejected</button>
+                    <button class="filter-btn" onclick="mgr.setFilter('DRAFT',    this)">Draft</button>
+                </div>
+            </div>
+
+            <!-- Loading / No Data for manager -->
+            <div id="mgr-loadingMsg" style="text-align:center;padding:30px;color:#2e5f8a;font-size:14px;">⏳ Loading team timesheets...</div>
+            <div id="mgr-noDataMsg" style="display:none;text-align:center;padding:30px;color:#888;font-size:14px;">❌ No team timesheet data for this week.</div>
+
+            <div id="mgr-mainSection" style="display:none;">
+                <!-- Employee cards grid -->
+                <div class="emp-cards" id="mgr-empCards"></div>
+
+                <!-- Detail panel -->
+                <div id="mgr-detailPanel">
+                    <div class="no-emp-selected" id="mgr-noEmpMsg">
+                        👆 Select an employee above to review their timesheet
+                    </div>
+                    <div id="mgr-timesheetDetail" style="display:none;">
+                        <div class="mgr-detail-header">
+                            <div>
+                                <div class="emp-name" id="mgr-detailEmpName">--</div>
+                                <div style="font-size:11px;color:#8ab0cc;" id="mgr-detailEmpCode">--</div>
+                            </div>
+                            <span class="status-pill" id="mgr-detailStatus" style="margin-left:12px;">--</span>
+                            <span class="week-lbl" id="mgr-detailWeekLbl">--</span>
+                        </div>
+                        <div class="table-wrap">
+                            <table id="mgr-timesheetTable">
+                                <thead>
+                                    <tr id="mgr-dateRow">
+                                        <th rowspan="2" style="min-width:220px;">Project / Activity / Category / Shift</th>
+                                        <th rowspan="2" style="min-width:150px;">Remarks</th>
+                                    </tr>
+                                    <tr id="mgr-dayRow"></tr>
+                                </thead>
+                                <tbody id="mgr-timesheetBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="summary-bar" id="mgr-summaryBar"></div>
+
+                        <!-- Approve / Reject bar -->
+                        <div class="approve-bar" id="mgr-approveBar">
+                            <textarea id="mgr-approveRemarks" placeholder="Remarks (optional for Approve, required for Reject)..." rows="1"></textarea>
+                            <button class="btn btn-approve" onclick="mgr.approveReject('APPROVED')">✔ Approve</button>
+                            <button class="btn btn-reject" onclick="mgr.approveReject('REJECTED')">✘ Reject</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /card-body -->
 </div>
 
 <!-- Toast -->
 <div class="ts-toast" id="tsToast"></div>
 
-<!-- History Modal -->
+<!-- History Modal (shared) -->
 <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -124,613 +896,6 @@
     </div>
 </div>
 
-<script>
-    // ════════════════════════════════════════════════════════════
-    //  WEEK HELPERS  – pure local calculation, no API dependency
-    // ════════════════════════════════════════════════════════════
-    function getCurrentMonday() {
-        const now  = new Date();
-        const day  = now.getDay();
-        const diff = (day === 0) ? -6 : 1 - day;
-        const mon  = new Date(now);
-        mon.setDate(now.getDate() + diff);
-        mon.setHours(0, 0, 0, 0);
-        return mon;
-    }
-
-    function getWeekDates(offset) {
-        const monday = getCurrentMonday();
-        monday.setDate(monday.getDate() + offset * 7);
-        return Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(monday);
-            d.setDate(monday.getDate() + i);
-            return d;
-        });
-    }
-
-    function fmt(d) {
-        return d.toLocaleDateString('en-GB', {
-            day: '2-digit', month: 'short', year: 'numeric'
-        }).replace(/ /g, '-');
-    }
-
-    function isoDate(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    function updateWeekLabel(offset) {
-        const dates = getWeekDates(offset);
-        const label = `${fmt(dates[0])} – ${fmt(dates[6])}`;
-        document.getElementById('weekRange').innerText = label;
-        document.getElementById('weekSub').innerText   = label;
-    }
-
-    function getFirstMondayOfYear(year) {
-        const jan1 = new Date(year, 0, 1);
-        const day  = jan1.getDay();
-        const diff = (day === 0) ? 1 : (day === 1) ? 0 : (8 - day);
-        const mon  = new Date(year, 0, 1 + diff);
-        mon.setHours(0, 0, 0, 0);
-        return mon;
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  STATE
-    // ════════════════════════════════════════════════════════════
-    let weekOffset  = 0;
-    let timesheetId = 0;
-    let rows        = [];
-    let dropdowns   = { projects: [], activities: [], categories: [], shifts: [] };
-    let HOLIDAYS    = new Set();
-
-    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-    // Show label immediately
-    updateWeekLabel(weekOffset);
-
-    // ════════════════════════════════════════════════════════════
-    //  WEEK NAVIGATION
-    // ════════════════════════════════════════════════════════════
-    function changeWeek(dir) {
-        weekOffset += dir;
-        updateWeekLabel(weekOffset);
-
-        // Sync year dropdown
-        const year = getWeekDates(weekOffset)[0].getFullYear().toString();
-        const sel  = document.getElementById('yearSelect');
-        if ([...sel.options].some(o => o.value === year)) sel.value = year;
-
-        loadTimesheet();
-    }
-
-    function onYearChange(year) {
-        const firstMon = getFirstMondayOfYear(parseInt(year));
-        const curMon   = getCurrentMonday();
-        weekOffset = Math.round((firstMon - curMon) / (7 * 86400000));
-        updateWeekLabel(weekOffset);
-        loadTimesheet();
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  DAY TYPE
-    // ════════════════════════════════════════════════════════════
-    function getDayType(d) {
-        const iso   = isoDate(d);
-        const day   = d.getDay();
-        const today = isoDate(new Date());
-        if (HOLIDAYS.has(iso))      return 'holiday';
-        if (day === 0 || day === 6) return 'weekend';
-        if (iso === today)          return 'today';
-        return 'present';
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  UI HELPERS
-    // ════════════════════════════════════════════════════════════
-    function setLoading(show) {
-        document.getElementById('loadingMsg').style.display   = show ? 'block' : 'none';
-        document.getElementById('tableSection').style.display = show ? 'none'  : 'block';
-        document.getElementById('noDataMsg').style.display    = 'none';
-    }
-
-    function showNoData() {
-        document.getElementById('loadingMsg').style.display   = 'none';
-        document.getElementById('tableSection').style.display = 'none';
-        document.getElementById('noDataMsg').style.display    = 'block';
-    }
-
-    // Build <option> list
-    // NOTE: shiftId is NVARCHAR (e.g. "DAY") not INT – use == not ===
-    function buildOptions(items, selectedId) {
-        return items.map(i =>
-            `<option value="${i.id}"${String(i.id) === String(selectedId) ? ' selected' : ''}>${i.displayName}</option>`
-        ).join('');
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  LOAD TIMESHEET  →  GET /TimeSheet/GetTimesheet?weekOffset=N
-    // ════════════════════════════════════════════════════════════
-    async function loadTimesheet() {
-        setLoading(true);
-        try {
-            const res    = await fetch(`/TimeSheet/GetTimesheet?weekOffset=${weekOffset}`);
-            const result = await res.json();
-
-            if (!result.status || !result.data) {
-                showNoData();
-                return;
-            }
-
-            const data = result.data;
-
-            // ── Cache dropdowns ───────────────────────────────────
-            if (data.projects?.length)   dropdowns.projects   = data.projects;
-            if (data.activities?.length) dropdowns.activities = data.activities;
-            if (data.categories?.length) dropdowns.categories = data.categories;
-            if (data.shifts?.length)     dropdowns.shifts     = data.shifts;
-
-            // ── Holidays ─────────────────────────────────────────
-            HOLIDAYS = new Set((data.holidays || []).map(h => h.split('T')[0]));
-
-            // ── Header ───────────────────────────────────────────
-            const h = data.header || {};
-            timesheetId = h.timesheetId || 0;
-
-            const empText      = `${h.employeeCode || ''} ${h.employeeName || ''}`.trim();
-            const approverText = `${h.approverCode || ''} ${h.approverName || ''}`.trim();
-
-            document.getElementById('empInfo').innerText      = empText      || '--';
-            document.getElementById('approverInfo').innerText = approverText || '--';
-            document.getElementById('empNameFull').innerText  = h.employeeName  || '--';
-            document.getElementById('approverFull').innerText =
-                h.approverCode ? `${h.approverCode} : ${h.approverName}` : '--';
-
-            const statusMap = {
-                DRAFT:'Draft', PENDING:'Pending with User',
-                APPROVED:'Approved', REJECTED:'Rejected'
-            };
-            document.getElementById('statusBadge').innerText =
-                statusMap[h.statusCode] || h.status || 'Draft';
-
-            // Always compute week label locally
-            updateWeekLabel(weekOffset);
-
-            // ── Rows ─────────────────────────────────────────────
-            //  SP seeds a default row if none exist, so data.rows
-            //  will always have ≥ 1 row on first load.
-            //  ShiftId is NVARCHAR (ShiftMaster.ShiftCode), keep as string.
-            rows = (data.rows || []).map(r => ({
-                rowId      : r.rowId      || 0,
-                projectId  : r.projectId  || null,
-                activityId : r.activityId || null,
-                categoryId : r.categoryId || null,
-                shiftId    : r.shiftId    || null,     // string e.g. "DAY"
-                remarks    : r.remarks    || '',
-                hours      : Array.isArray(r.hours) && r.hours.length === 7
-                    ? r.hours.map(v => (v === null || v === undefined) ? null : parseFloat(v))
-                    : Array(7).fill(null)
-            }));
-
-            // If API returns zero rows despite the SP seeding, add one locally
-            if (rows.length === 0) {
-                rows.push(makeDefaultRow());
-            }
-
-            document.getElementById('loadingMsg').style.display   = 'none';
-            document.getElementById('tableSection').style.display = 'block';
-            document.getElementById('noDataMsg').style.display    = 'none';
-
-            renderAll();
-
-        } catch (err) {
-            console.error('loadTimesheet error:', err);
-            showNoData();
-        }
-    }
-
-    // Build a client-side default row using first dropdown values
-    function makeDefaultRow() {
-        const lastRow = rows.length ? rows[rows.length - 1] : null;
-
-        return {
-            rowId      : 0,
-            projectId  : dropdowns.projects[0]?.id   ?? null,
-            activityId : dropdowns.activities[0]?.id ?? null,
-            categoryId : dropdowns.categories[0]?.id ?? null,
-            shiftId    : dropdowns.shifts[0]?.id     ?? null,
-            remarks    : lastRow?.remarks || '',
-            hours      : Array(7).fill(null)
-        };
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  RENDER
-    // ════════════════════════════════════════════════════════════
-    function renderAll() {
-        const dates = getWeekDates(weekOffset);
-        renderHeaders(dates);
-        renderBody(dates);
-        renderSummary(dates);
-    }
-
-    function renderHeaders(dates) {
-        const dateRow = document.getElementById('dateRow');
-        dateRow.querySelectorAll('th.date-th').forEach(t => t.remove());
-        const remarksTh = dateRow.querySelectorAll('th')[1];
-
-        dates.forEach(d => {
-            const th = document.createElement('th');
-            th.className   = `date-th ${getDayType(d)}`;
-            th.textContent = fmt(d);
-            dateRow.insertBefore(th, remarksTh);
-        });
-
-        const dayRow = document.getElementById('dayRow');
-        dayRow.innerHTML = '';
-        dates.forEach(d => {
-            const th = document.createElement('th');
-            const t  = getDayType(d);
-            th.textContent = DAY_NAMES[d.getDay()];
-            th.className   = (t === 'present') ? '' : t;
-            dayRow.appendChild(th);
-        });
-    }
-
-    function renderBody(dates) {
-        const tbody = document.getElementById('timesheetBody');
-        tbody.innerHTML = '';
-
-        rows.forEach((row, ri) => {
-            const tr = document.createElement('tr');
-
-            // ── Project cell: 4 dropdowns ─────────────────────────
-            //    ShiftId is a string (ShiftCode) – keep as string in state
-            const projTd = document.createElement('td');
-            projTd.className = 'proj-cell';
-            projTd.innerHTML = `
-                <select class="proj-select" onchange="rows[${ri}].projectId = +this.value">
-                    <option value="">-- Select Project --</option>
-                    ${buildOptions(dropdowns.projects, row.projectId)}
-                </select>
-                <select class="proj-select" onchange="rows[${ri}].activityId = +this.value">
-                    <option value="">-- Activity --</option>
-                    ${buildOptions(dropdowns.activities, row.activityId)}
-                </select>
-                <select class="proj-select" onchange="rows[${ri}].categoryId = +this.value">
-                    <option value="">-- Category --</option>
-                    ${buildOptions(dropdowns.categories, row.categoryId)}
-                </select>
-                <select class="proj-select" onchange="rows[${ri}].shiftId = this.value">
-                    <option value="">-- Shift --</option>
-                    ${buildOptions(dropdowns.shifts, row.shiftId)}
-                </select>`;
-            tr.appendChild(projTd);
-
-            // ── Day cells ─────────────────────────────────────────
-            dates.forEach((d, di) => {
-                const type     = getDayType(d);
-                const rawVal   = row.hours[di];
-                const hasHours = rawVal !== null && rawVal !== undefined && parseFloat(rawVal) > 0;
-                const isAbsent = !hasHours && (type === 'present' || type === 'today');
-                const cellType = (type === 'present' && isAbsent) ? 'absent' : type;
-                const dis      = (type === 'weekend' || type === 'holiday') ? 'disabled' : '';
-                const val      = rawVal != null ? parseFloat(rawVal).toFixed(2) : '';
-
-                let tag = '';
-                if      (type === 'holiday')          tag = `<span class="day-tag">Holiday</span>`;
-                else if (type === 'weekend')          tag = `<span class="day-tag">Weekend</span>`;
-                else if (type === 'today' && hasHours)tag = `<span class="day-tag">Today ✓</span>`;
-                else if (type === 'today')            tag = `<span class="day-tag">Today</span>`;
-                else if (isAbsent)                    tag = `<span class="day-tag">Absent</span>`;
-                else                                  tag = `<span class="day-tag">Present</span>`;
-
-                const td = document.createElement('td');
-                td.className = `day-cell ${cellType}`;
-                td.innerHTML = `
-                    <input class="time-input" type="number"
-                        min="0" max="24" step="0.5"
-                        value="${val}" placeholder="0.00" ${dis}
-                        onchange="onHoursChange(${ri}, ${di}, this.value)">
-                    ${tag}`;
-                tr.appendChild(td);
-            });
-
-            // ── Remarks ───────────────────────────────────────────
-            const remTd = document.createElement('td');
-            remTd.className = 'remarks-cell';
-            remTd.innerHTML = `<textarea
-                placeholder="Enter remarks..."
-                oninput="updateRemarks(${ri}, this.value)">${row.remarks}</textarea>`;
-            tr.appendChild(remTd);
-
-            // ── Action cell ───────────────────────────────────────
-            const actTd = document.createElement('td');
-            actTd.className = 'action-cell';
-            actTd.innerHTML = `
-                <div class="action-icons">
-                    <button class="icon-btn ref-btn" title="Reset row" onclick="resetRow(${ri})">&#8635;</button>
-                    <button class="icon-btn del-btn" title="Delete row" onclick="deleteRow(${ri})">&#128465;</button>
-                </div>`;
-            tr.appendChild(actTd);
-
-            tbody.appendChild(tr);
-        });
-
-        // ── Total row ─────────────────────────────────────────────
-        const totalTr = document.createElement('tr');
-        totalTr.className = 'total-row';
-
-        const lbl = document.createElement('td');
-        lbl.className = 'proj-cell';
-        lbl.innerHTML = '<strong style="font-size:12px;">Total Hours</strong>';
-        totalTr.appendChild(lbl);
-
-        dates.forEach((d, di) => {
-            const td = document.createElement('td');
-            td.className = `day-cell ${getDayType(d)}`;
-            td.style.textAlign = 'center';
-            const total = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
-            td.innerHTML = `<span class="total-hours">${total > 0 ? total.toFixed(2) : '—'}</span>`;
-            totalTr.appendChild(td);
-        });
-
-        const remT = document.createElement('td'); remT.className = 'remarks-cell';
-        const actT = document.createElement('td'); actT.className = 'action-cell';
-        totalTr.appendChild(remT);
-        totalTr.appendChild(actT);
-        tbody.appendChild(totalTr);
-    }
-
-    function renderSummary(dates) {
-        if (!dates) dates = getWeekDates(weekOffset);
-        let totalHrs = 0, presentDays = 0, absentDays = 0, holidays = 0, weekends = 0;
-        dates.forEach((d, di) => {
-            const type = getDayType(d);
-            if (type === 'holiday') { holidays++; return; }
-            if (type === 'weekend') { weekends++; return; }
-            const dayTotal = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
-            if (dayTotal > 0) { presentDays++; totalHrs += dayTotal; } else absentDays++;
-        });
-        document.getElementById('summaryBar').innerHTML = `
-            <div class="s-item">Total Hours: <span>${totalHrs.toFixed(2)}</span></div>
-            <div class="s-item">Present Days: <span>${presentDays}</span></div>
-            <div class="s-item">Absent Days: <span>${absentDays}</span></div>
-            <div class="s-item">Holidays: <span>${holidays}</span></div>
-            <div class="s-item">Weekends: <span>${weekends}</span></div>`;
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  HOURS CHANGE – update cell without full re-render
-    // ════════════════════════════════════════════════════════════
-    function onHoursChange(ri, di, value) {
-        rows[ri].hours[di] = value ? parseFloat(value) : null;
-
-        const dates    = getWeekDates(weekOffset);
-        const type     = getDayType(dates[di]);
-        const hasHours = value && parseFloat(value) > 0;
-        const isAbsent = !hasHours && type === 'present';
-        const cellType = isAbsent ? 'absent' : type;
-
-        const bodyRows  = document.querySelectorAll('#timesheetBody tr:not(.total-row)');
-        const targetRow = bodyRows[ri];
-        if (targetRow) {
-            const cell = targetRow.querySelectorAll('.day-cell')[di];
-            if (cell) {
-                cell.className = `day-cell ${cellType}`;
-                const tag = cell.querySelector('.day-tag');
-                if (tag) {
-                    if      (type === 'holiday')          tag.textContent = 'Holiday';
-                    else if (type === 'weekend')          tag.textContent = 'Weekend';
-                    else if (type === 'today' && hasHours)tag.textContent = 'Today ✓';
-                    else if (type === 'today')            tag.textContent = 'Today';
-                    else if (isAbsent)                    tag.textContent = 'Absent';
-                    else                                  tag.textContent = 'Present';
-                }
-            }
-            // Update total cell for this column
-            const totals = document.querySelectorAll('#timesheetBody tr.total-row .day-cell');
-            if (totals[di]) {
-                const total = rows.reduce((s, r) => s + (parseFloat(r.hours[di]) || 0), 0);
-                const span  = totals[di].querySelector('.total-hours');
-                if (span) span.textContent = total > 0 ? total.toFixed(2) : '—';
-            }
-        }
-        renderSummary();
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  ADD ROW
-    // ════════════════════════════════════════════════════════════
-    function addRow() {
-        rows.push(makeDefaultRow());
-        renderAll();
-        showToast('✅ New row added');
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  SAVE  →  POST /TimeSheet/SaveTimesheet
-    // ════════════════════════════════════════════════════════════
-    async function saveSheet() {
-        if (rows.length === 0) { showToast('⚠️ Nothing to save'); return; }
-
-        const payload = {
-            timesheetId: timesheetId || 0,
-            weekOffset: weekOffset || 0,
-            rows: rows.map((r, i) => ({
-                rowId      : r.rowId      || 0,
-                projectId  : r.projectId  || 0,
-                activityId : r.activityId || 0,
-                categoryId : r.categoryId || 0,
-                shiftId    : r.shiftId    || '',   // string ShiftCode
-                remarks    : r.remarks    || '',
-                sortOrder  : i + 1,
-                hours      : r.hours.map(h => h ?? null)
-            }))
-        };
-
-        try {
-            const res    = await fetch('/TimeSheet/SaveTimesheet', {
-                method : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body   : JSON.stringify(payload)
-            });
-            const result = await res.json();
-            if (!result.status) { showToast('❌ ' + (result.message || 'Save failed')); return; }
-            if (result.data?.timesheetId[0]) timesheetId = result.data.timesheetId[0];
-            showToast('💾 Saved successfully');
-        } catch (err) {
-            console.error('saveSheet:', err);
-            showToast('❌ Save failed');
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  SUBMIT
-    // ════════════════════════════════════════════════════════════
-    async function submitSheet() {
-        if (!confirm('Submit timesheet for approval?')) return;
-        await saveSheet();
-        console.log(timesheetId,"8----");
-        try {
-            const res    = await fetch('/TimeSheet/SubmitTimesheet', {
-                method : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body   : JSON.stringify({ timesheetId })
-            });
-            const result = await res.json();
-            if (!result.status) { showToast('❌ ' + (result.message || 'Submit failed')); return; }
-            document.getElementById('statusBadge').innerText = 'Pending with User';
-            showToast('✅ Submitted for approval');
-        } catch (err) {
-            console.error('submitSheet:', err);
-            showToast('❌ Submit failed');
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  DELETE ROW
-    // ════════════════════════════════════════════════════════════
-    async function deleteRow(index) {
-        if (rows.length === 1) { showToast('⚠️ At least one row is required'); return; }
-        const row = rows[index];
-
-        if (!row.rowId) {
-            rows.splice(index, 1);
-            renderAll();
-            showToast('🗑️ Row removed');
-            return;
-        }
-
-        if (!confirm('Delete this row?')) return;
-        try {
-            const res    = await fetch(`/TimeSheet/DeleteRow?rowId=${row.rowId}`, { method: 'POST' });
-            const result = await res.json();
-            if (!result.status) { showToast('❌ ' + (result.message || 'Delete failed')); return; }
-            rows.splice(index, 1);
-            renderAll();
-            showToast('🗑️ Row deleted');
-        } catch (err) {
-            console.error('deleteRow:', err);
-            showToast('❌ Delete failed');
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  RESET ROW
-    // ════════════════════════════════════════════════════════════
-    async function resetRow(index) {
-        const row = rows[index];
-        if (!row.rowId) {
-            rows[index].hours   = Array(7).fill(null);
-            rows[index].remarks = '';
-            renderAll();
-            showToast('🔄 Row reset');
-            return;
-        }
-        try {
-            const res    = await fetch(`/TimeSheet/ResetRow?rowId=${row.rowId}`, { method: 'POST' });
-            const result = await res.json();
-            if (!result.status) { showToast('❌ ' + (result.message || 'Reset failed')); return; }
-            rows[index].hours   = Array(7).fill(null);
-            rows[index].remarks = '';
-            renderAll();
-            showToast('🔄 Row reset');
-        } catch (err) {
-            console.error('resetRow:', err);
-            showToast('❌ Reset failed');
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  REFRESH
-    // ════════════════════════════════════════════════════════════
-    function refreshSheet() {
-        const spin = document.getElementById('spinIcon');
-        spin.style.transition = 'transform 0.65s ease';
-        spin.style.transform  = 'rotate(360deg)';
-        setTimeout(() => { spin.style.transform = ''; spin.style.transition = ''; }, 700);
-        loadTimesheet();
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  VIEW HISTORY
-    // ════════════════════════════════════════════════════════════
-    async function viewHistory() {
-        if (!timesheetId) { showToast('⚠️ No saved timesheet yet'); return; }
-        document.getElementById('historyBody').innerHTML =
-            '<p class="text-center text-muted">Loading...</p>';
-        new bootstrap.Modal(document.getElementById('historyModal')).show();
-
-        try {
-            const res    = await fetch(`/TimeSheet/GetHistory?timesheetId=${timesheetId}`);
-            const result = await res.json();
-
-            if (!result.status || !result.data?.length) {
-                document.getElementById('historyBody').innerHTML =
-                    '<p class="text-center text-muted">No history found.</p>';
-                return;
-            }
-
-            const trs = result.data.map(l => `
-                <tr>
-                    <td><span class="badge bg-secondary">${l.actionType ?? '—'}</span></td>
-                    <td>${l.actionByName ?? '—'} <small class="text-muted">(${l.actionByCode ?? ''})</small></td>
-                    <td>${l.actionOn ? new Date(l.actionOn).toLocaleString() : '—'}</td>
-                    <td>${l.remarks ?? '—'}</td>
-                </tr>`).join('');
-
-            document.getElementById('historyBody').innerHTML = `
-                <table class="table table-sm table-bordered table-hover">
-                    <thead class="table-dark">
-                        <tr><th>Action</th><th>By</th><th>Date / Time</th><th>Remarks</th></tr>
-                    </thead>
-                    <tbody>${trs}</tbody>
-                </table>`;
-        } catch {
-            document.getElementById('historyBody').innerHTML =
-                '<p class="text-center text-danger">Failed to load history.</p>';
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  UPLOAD / TOAST
-    // ════════════════════════════════════════════════════════════
-    function uploadAttachment() { showToast('📎 Upload feature coming soon'); }
-
-    function showToast(msg) {
-        const t = document.getElementById('tsToast');
-        t.textContent = msg;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2800);
-    }
-
-    function updateRemarks(index, value) {
-        if (!rows[index]) return;
-        rows[index].remarks = value;
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  INIT
-    // ════════════════════════════════════════════════════════════
-    loadTimesheet();
-</script>
+<!-- Javascript  -->
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/attendance/weekly_timesheet.js"></script>

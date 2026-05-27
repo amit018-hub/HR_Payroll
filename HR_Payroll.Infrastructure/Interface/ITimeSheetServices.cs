@@ -22,5 +22,11 @@ namespace HR_Payroll.Infrastructure.Interface
         Task<Result<object>> ResetRowAsync(int rowId, string employeeCode);
 
         Task<Result<IEnumerable<TimesheetAuditDto>>> GetHistoryAsync(int timesheetId);
+
+        Task<Result<TeamTimesheetResponse>> GetTeamTimesheetsAsync(string approverCode, int weekOffset);
+
+        Task<Result<TeamTimesheetDetail>> GetTimesheetByIdAsync(int timesheetId, int employeeId, string approverCode);
+
+        Task<Result<object>> ApproveRejectAsync(ApproveRejectRequest request);
     }
 }

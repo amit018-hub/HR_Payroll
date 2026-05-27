@@ -51,7 +51,7 @@ namespace HR_Payroll.Web.Controllers
         public async Task<JsonResult> GetSubDepartments(int deptid)
         {
             var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync($"{_apiBaseUrl}SubDepartment/GetAllSubDepartments?deptid={deptid}");
+            var response = await client.GetAsync($"{_apiBaseUrl}SubDepartment/GetAllSubDepartments?departmentId={deptid}");
             if (response.IsSuccessStatusCode)
             {
                 var subDepartments = await response.Content.ReadFromJsonAsync<object>();
@@ -285,8 +285,6 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
-
-        
 
     }
 

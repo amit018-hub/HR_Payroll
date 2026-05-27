@@ -88,12 +88,13 @@ namespace HR_Payroll.API.Controllers
                     savedFilePath = fileName;
                 }
 
-                await _employeeService.SaveAllEmployeeDataAsync( basic!, payroll!, bank!, salaryComponents!, savedFilePath );
+                var empId= await _employeeService.SaveAllEmployeeDataAsync( basic!, payroll!, bank!, salaryComponents!, savedFilePath );
 
                 return Ok(new
                 {
                     status = true,
-                    message = "Employee data saved successfully"
+                    message = "Employee data saved successfully",
+                    data = empId
                 });
             }
             catch (Exception ex)

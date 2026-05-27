@@ -271,5 +271,130 @@ namespace HR_Payroll.API.Controllers
                 });
             }
         }
+
+        [HttpGet("team")]
+        [Authorize(Roles = "Admin,Manager,Team Lead")]
+        [ProducesResponseType(typeof(TeamTimesheetResponse), 200)]
+        public async Task<IActionResult> GetTeamTimesheets([FromQuery] int weekOffset = 0)
+        {
+            try
+            {
+                var approverCode = GetCurrentEmployeeCode();
+
+                var result = await _timesheetservice
+                    .GetTeamTimesheetsAsync(approverCode, weekOffset);
+
+                if (!result.IsSuccess)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = result.Message,
+                        data = new List<object>()
+                    });
+                }
+
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
+                    message = result.Message,
+                    data = result.Entity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving team timesheets");
+
+                return StatusCode(500, new DataResponse<object>
+                {
+                    status = false,
+                    message = "Error retrieving team timesheets",
+                    data = new List<object>()
+                });
+            }
+        }
+
+        [HttpGet("detail")]
+        [Authorize(Roles = "Admin,Manager,Team Lead")]
+        [ProducesResponseType(typeof(TeamTimesheetDetail), 200)]
+        public async Task<IActionResult> GetTimesheetById([FromQuery] int timesheetId, [FromQuery] int employeeId, [FromQuery] int weekOffset = 0)
+        {
+            try
+            {
+                var approverCode = GetCurrentEmployeeCode();
+
+                var result = await _timesheetservice
+                    .GetTimesheetByIdAsync(timesheetId, employeeId, approverCode);
+
+                if (!result.IsSuccess)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = result.Message,
+                        data = new List<object>()
+                    });
+                }
+
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
+                    message = result.Message,
+                    data = result.Entity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving timesheet detail");
+
+                return StatusCode(500, new DataResponse<object>
+                {
+                    status = false,
+                    message = "Error retrieving timesheet detail",
+                    data = new List<object>()
+                });
+            }
+        }
+
+        [HttpPost("approveReject")]
+        [Authorize(Roles = "Admin,Manager,Team Lead")]
+        [ProducesResponseType(typeof(object), 200)]
+        public async Task<IActionResult> ApproveReject([FromBody] ApproveRejectRequest req)
+        {
+            try
+            {
+                req.ApproverCode = GetCurrentEmployeeCode();
+
+                var result = await _timesheetservice.ApproveRejectAsync(req);
+
+                if (!result.IsSuccess)
+                {
+                    return Ok(new DataResponse<object>
+                    {
+                        status = false,
+                        message = result.Message,
+                        data = new List<object>()
+                    });
+                }
+
+                return Ok(new DataResponse<object>
+                {
+                    status = true,
+                    message = result.Message,
+                    data = result.Entity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving/rejecting timesheet");
+
+                return StatusCode(500, new DataResponse<object>
+                {
+                    status = false,
+                    message = "Error processing request",
+                    data = new List<object>()
+                });
+            }
+        }
     }
 }

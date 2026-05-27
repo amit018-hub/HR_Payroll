@@ -290,5 +290,145 @@ namespace HR_Payroll.Web.Controllers
         }
 
         #endregion
+
+        #region-----------------Team Time Sheet----------------------
+
+        [HttpGet]
+        public async Task<IActionResult> GetTeamTimesheets(int weekOffset = 0)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return RedirectToAction("Login", "Account");
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.GetAsync<TeamTimesheetResponse>(
+                    "Timesheet/team",
+                    new Dictionary<string, string>
+                    {
+                { "weekOffset", weekOffset.ToString() }
+                    });
+
+                if (!result.status)
+                {
+                    return Json(new { status = false, message = result.message });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching team timesheets");
+
+                return Json(new
+                {
+                    status = false,
+                    message = "Error fetching team timesheets"
+                });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTimesheetById(int timesheetId, int employeeId, int weekOffset = 0)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return RedirectToAction("Login", "Account");
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.GetAsync<TeamTimesheetDetail>(
+                    "Timesheet/detail",
+                    new Dictionary<string, string>
+                    {
+                { "timesheetId", timesheetId.ToString() },
+                { "employeeId", employeeId.ToString() },
+                { "weekOffset", weekOffset.ToString() }
+                    });
+
+                if (!result.status)
+                {
+                    return Json(new { status = false, message = result.message });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching timesheet detail");
+
+                return Json(new
+                {
+                    status = false,
+                    message = "Error fetching timesheet detail"
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApproveReject([FromBody] ApproveRejectRequest req)
+        {
+            try
+            {
+                var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+                var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+
+                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new { status = false, message = "Session expired." });
+                }
+
+                _apiClient.SetTokens(accessToken, refreshToken);
+
+                var result = await _apiClient.PostAsync<object>(
+                    "Timesheet/approveReject", req);
+
+                if (!result.status)
+                {
+                    return Json(new { status = false, message = result.message });
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    message = result.message,
+                    data = result.data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving/rejecting timesheet");
+
+                return Json(new
+                {
+                    status = false,
+                    message = "Error processing request"
+                });
+            }
+        }
+
+        #endregion
     }
 }
