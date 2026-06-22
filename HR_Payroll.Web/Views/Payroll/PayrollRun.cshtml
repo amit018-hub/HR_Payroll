@@ -30,7 +30,7 @@
     <!-- Actions -->
     <div class="d-flex justify-content-end gap-2 mb-3">
         <button id="btnCalculatePayroll" class="btn btn-outline-primary">Calculate Payroll</button>
-        <button id="btnApproveSelected" class="btn btn-warning">Approve Selected</button>
+        <button id="btnApproveSelected" class="btn btn-warning" disabled title="Approve workflow not available yet">Approve Selected</button>
         <button id="btnGeneratePayslips" class="btn btn-success">Generate Payslips</button>
     </div>
 
@@ -44,143 +44,7 @@
                             <th><input id="selectAll" type="checkbox" /></th>
                             <th>Emp Code</th>
                             <th>Name</th>
-                            <th>Days</th>
-                            <th class="text-end">Gross</th>
-                            <th class="text-end">Deductions</th>
-                            <th class="text-end">Net Pay</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Employee Payroll Detail Modal -->
-<div class="modal fade" id="employeePayrollModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title">Employee Payroll Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-
-                <!-- Employee Info -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <strong>Employee:</strong> Amit Pradhan<br />
-                        <strong>Emp Code:</strong> EMP001
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <strong>Month:</strong> Jan 2025
-                    </div>
-                </div>
-
-                <!-- Attendance -->
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h6 class="fw-bold mb-2">Attendance Summary</h6>
-                        <div class="row text-center">
-                            <div class="col">Total: <strong>30</strong></div>
-                            <div class="col">Present: <strong>28</strong></div>
-                            <div class="col">LOP: <strong>2</strong></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Earnings & Deductions -->
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Earnings</h6>
-                        <table class="table table-sm table-bordered">
-                            <tr><td>Basic</td><td class="text-end">25,000</td></tr>
-                            <tr><td>HRA</td><td class="text-end">10,000</td></tr>
-                            <tr><td>Allowance</td><td class="text-end">5,000</td></tr>
-                        </table>
-                    </div>
-
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Deductions</h6>
-                        <table class="table table-sm table-bordered">
-                            <tr><td>PF</td><td class="text-end">3,000</td></tr>
-                            <tr><td>PT</td><td class="text-end">200</td></tr>
-                            <tr><td>LOP</td><td class="text-end">2,000</td></tr>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Net Pay -->
-                <div class="alert alert-success text-center mt-3">
-                    <h5 class="mb-0">Net Pay: ₹34,800</h5>
-                </div>
-
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button class="btn btn-primary">Approve</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script src="~/js/jquery-3.6.4.min.js"></script>
-<script src="~/js/payroll/payrollRun.js"></script>
-
-
-
-@* <div class="container-fluid p-4">
-
-    <h4 class="fw-bold mb-4">Payroll Processing (Bulk)</h4>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Payroll Month</label>
-                    <input type="month" class="form-control" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Department</label>
-                    <select class="form-select">
-                        <option>All</option>
-                        <option>IT</option>
-                        <option>HR</option>
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button class="btn btn-primary w-100">Load Employees</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="d-flex justify-content-end gap-2 mb-3">
-        <button class="btn btn-outline-primary">Calculate Payroll</button>
-        <button class="btn btn-warning">Approve Selected</button>
-        <button class="btn btn-success">Generate Payslips</button>
-    </div>
-
-    <!-- Employee Grid -->
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" /></th>
-                            <th>Emp Code</th>
-                            <th>Name</th>
-                            <th>Days</th>
+                            <th>Components Set Up</th>
                             <th class="text-end">Gross</th>
                             <th class="text-end">Deductions</th>
                             <th class="text-end">Net Pay</th>
@@ -190,28 +54,13 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><input type="checkbox" /></td>
-                            <td>EMP001</td>
-                            <td>Amit Pradhan</td>
-                            <td>28</td>
-                            <td class="text-end">40,000</td>
-                            <td class="text-end">5,200</td>
-                            <td class="text-end text-success fw-bold">34,800</td>
-                            <td><span class="badge bg-warning">Draft</span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#employeePayrollModal">
-                                    View
-                                </button>
-                            </td>
+                            <td colspan="9" class="text-center text-muted">Choose a payroll month and click "Load Employees" to begin.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Employee Payroll Detail Modal -->
@@ -229,65 +78,51 @@
                 <!-- Employee Info -->
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong>Employee:</strong> Amit Pradhan<br />
-                        <strong>Emp Code:</strong> EMP001
+                        <strong>Employee:</strong> <span id="modalEmployeeName">-</span><br />
+                        <strong>Emp Code:</strong> <span id="modalEmployeeCode">-</span>
                     </div>
                     <div class="col-md-6 text-end">
-                        <strong>Month:</strong> Jan 2025
-                    </div>
-                </div>
-
-                <!-- Attendance -->
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h6 class="fw-bold mb-2">Attendance Summary</h6>
-                        <div class="row text-center">
-                            <div class="col">Total: <strong>30</strong></div>
-                            <div class="col">Present: <strong>28</strong></div>
-                            <div class="col">LOP: <strong>2</strong></div>
-                        </div>
+                        <strong>Month:</strong> <span id="modalMonth">-</span>
                     </div>
                 </div>
 
                 <!-- Earnings & Deductions -->
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="fw-bold">Earnings</h6>
+                        <h6 class="fw-bold">Gross Earnings</h6>
                         <table class="table table-sm table-bordered">
-                            <tr><td>Basic</td><td class="text-end">25,000</td></tr>
-                            <tr><td>HRA</td><td class="text-end">10,000</td></tr>
-                            <tr><td>Allowance</td><td class="text-end">5,000</td></tr>
+                            <tr><td>Total Earnings</td><td class="text-end" id="modalGross">0</td></tr>
                         </table>
                     </div>
 
                     <div class="col-md-6">
                         <h6 class="fw-bold">Deductions</h6>
                         <table class="table table-sm table-bordered">
-                            <tr><td>PF</td><td class="text-end">3,000</td></tr>
-                            <tr><td>PT</td><td class="text-end">200</td></tr>
-                            <tr><td>LOP</td><td class="text-end">2,000</td></tr>
+                            <tr><td>Total Deductions</td><td class="text-end" id="modalDeductions">0</td></tr>
                         </table>
                     </div>
                 </div>
 
                 <!-- Net Pay -->
                 <div class="alert alert-success text-center mt-3">
-                    <h5 class="mb-0">Net Pay: ₹34,800</h5>
+                    <h5 class="mb-0">Net Pay: <span id="modalNetPay">0</span></h5>
                 </div>
+
+                <p class="text-muted small mb-0">
+                    Detailed component-by-component breakdown is available on the
+                    <a href="javascript:void(0)" id="modalViewSlipLink">salary slip</a> for this employee.
+                </p>
 
             </div>
 
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button class="btn btn-primary">Approve</button>
+                <button class="btn btn-primary" id="btnApprove" disabled title="Approve workflow not available yet">Approve</button>
             </div>
 
         </div>
     </div>
-</div> *@
+</div>
 
-
-
-
-
-
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/payroll/payrollRun.js"></script>

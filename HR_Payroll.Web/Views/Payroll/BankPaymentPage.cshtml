@@ -1,37 +1,63 @@
-﻿
-@{
-    ViewData["Title"] = "BankPaymentPage";
+﻿@{
+    ViewData["Title"] = "Bank Salary Payment";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<h4>Bank Salary Payment</h4>
 
-<div class="card">
-    <div class="card-body">
-        <p><strong>Payroll Month:</strong> Jan 2025</p>
-        <p><strong>Total Employees:</strong> 25</p>
-        <p><strong>Total Amount:</strong> ₹12,50,000</p>
-
-        <button class="btn btn-primary">
-            Generate Bank Sheet
-        </button>
-
-        <button class="btn btn-success">
-            Mark Payment Done
-        </button>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+                    <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                    <li class="breadcrumb-item active">Bank Payment</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Bank Salary Payment</h4>
+        </div>
     </div>
 </div>
 
-<table class="table mt-4">
+<div class="card">
+    <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Payroll Month</label>
+                <input id="bankPayrollMonth" type="month" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <button id="btnLoadBankSheet" class="btn btn-primary w-100">Generate Bank Sheet</button>
+            </div>
+            <div class="col-md-3">
+                <button id="btnMarkPaymentDone" class="btn btn-success w-100" disabled>Mark Payment Done</button>
+            </div>
+        </div>
+
+        <p><strong>Payroll Month:</strong> <span id="summaryMonth">-</span></p>
+        <p><strong>Total Employees:</strong> <span id="summaryTotalEmployees">0</span></p>
+        <p><strong>Total Amount:</strong> ₹<span id="summaryTotalAmount">0</span></p>
+    </div>
+</div>
+
+<table id="bankPaymentTable" class="table table-bordered mt-4">
     <thead>
         <tr>
+            <th><input id="bankSelectAll" type="checkbox" /></th>
             <th>Emp Code</th>
             <th>Name</th>
             <th>Bank</th>
             <th>Account</th>
-            <th>Net Pay</th>
+            <th>IFSC</th>
+            <th class="text-end">Net Pay</th>
             <th>Status</th>
         </tr>
     </thead>
+    <tbody>
+        <tr>
+            <td colspan="8" class="text-center text-muted">Choose a payroll month and click "Generate Bank Sheet" to begin.</td>
+        </tr>
+    </tbody>
 </table>
 
-
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/payroll/bankPaymentPage.js"></script>

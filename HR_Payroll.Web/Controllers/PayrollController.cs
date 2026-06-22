@@ -1,7 +1,9 @@
 ﻿using HR_Payroll.Core.DTO.Dept;
 using HR_Payroll.Core.DTO.Leave;
+using HR_Payroll.Core.DTO.Payroll;
 using HR_Payroll.Core.Model.Leave;
 using HR_Payroll.Core.Model.Master;
+using HR_Payroll.Core.Model.Payroll;
 using HR_Payroll.Core.Response;
 using HR_Payroll.Web.CommonClients;
 using Humanizer;
@@ -358,14 +360,169 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+        // Payroll views
+        public IActionResult PayrollRun() => View();
 
+        public IActionResult BankPaymentPage() => View();
 
-
-        public ActionResult SalarySlip()
+        public async Task<IActionResult> SalarySlip(int? employeeId, string? month)
         {
-            return View();
+            int resolvedEmployeeId = employeeId ?? 0;
+            if (resolvedEmployeeId <= 0)
+            {
+                var claim = User.Claims.FirstOrDefault(c => c.Type == "EmployeeId")?.Value;
+                int.TryParse(claim, out resolvedEmployeeId);
+            }
+
+            var (payrollMonth, payrollYear) = ParseMonth(month);
+
+            if (resolvedEmployeeId <= 0)
+            {
+                ViewBag.LoadError = "No employee selected.";
+                return View();
+            }
+
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.GetAsync<SalarySlipDto>("Salary/GetSalarySlip",
+                    new Dictionary<string, string>
+                    {
+                        { "employeeId",    resolvedEmployeeId.ToString() },
+                        { "payrollMonth",  payrollMonth.ToString() },
+                        { "payrollYear",   payrollYear.ToString() }
+                    });
+
+                if (!result.status || result.data == null)
+                {
+                    ViewBag.LoadError = result.message ?? "Salary slip not found.";
+                    return View();
+                }
+
+                return View(result.data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in SalarySlip for employee {Id}", resolvedEmployeeId);
+                ViewBag.LoadError = "An error occurred while loading the salary slip.";
+                return View();
+            }
         }
 
-    }
+        [HttpGet]
+        public async Task<IActionResult> LoadPayrollEmployees(string? month, int? departmentId)
+        {
+            if (string.IsNullOrWhiteSpace(month))
+                return BadRequest(new { status = false, message = "month is required." });
 
+            try
+            {
+                SetTokens();
+                var qp = new Dictionary<string, string> { { "month", month } };
+                if (departmentId.HasValue && departmentId.Value > 0)
+                    qp["departmentId"] = departmentId.Value.ToString();
+
+                var result = await _apiClient.GetAsync<List<PayrollRunRowDto>>("Salary/GetPayrollRunRows", qp);
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+                return Json(new { status = true, result = new { data = result.data } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in LoadPayrollEmployees");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CalculatePayroll([FromBody] CalculatePayrollRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.Month)
+                || req.EmployeeIds == null || !req.EmployeeIds.Any())
+                return BadRequest(new { status = false, message = "Month and at least one employee are required." });
+
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.PostAsync<PayrollRunResultDto>("Salary/CalculatePayroll", req);
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+                return Json(new { status = true, result = new { data = result.data } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in CalculatePayroll");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LoadBankPaymentSummary(string? month)
+        {
+            if (string.IsNullOrWhiteSpace(month))
+                return BadRequest(new { status = false, message = "month is required." });
+
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.GetAsync<BankPaymentSummaryDto>(
+                    "Salary/GetBankPaymentSummary",
+                    new Dictionary<string, string> { { "month", month } });
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+                return Json(new { status = true, result = new { data = result.data } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in LoadBankPaymentSummary");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkPaymentDone([FromBody] MarkPaymentDoneRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.PayrollMonth)
+                || req.PayrollEmployeeIds == null || !req.PayrollEmployeeIds.Any())
+                return BadRequest(new { status = false, message = "Invalid payload." });
+
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.PostAsync<object>("Salary/MarkPaymentDone", req);
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+                return Json(new { status = true, message = "Payment marked as done." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in MarkPaymentDone");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Helpers
+        // ---------------------------------------------------------------
+
+        private void SetTokens()
+        {
+            var accessToken = User.Claims.FirstOrDefault(c => c.Type == "access_token")?.Value;
+            var refreshToken = User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+            if (!string.IsNullOrEmpty(accessToken))
+                _apiClient.SetTokens(accessToken, refreshToken ?? string.Empty);
+        }
+
+        private static (int Month, int Year) ParseMonth(string? month)
+        {
+            if (!string.IsNullOrWhiteSpace(month) &&
+                DateTime.TryParseExact(month, "yyyy-MM", null,
+                    System.Globalization.DateTimeStyles.None, out var parsed))
+                return (parsed.Month, parsed.Year);
+
+            var now = DateTime.UtcNow;
+            return (now.Month, now.Year);
+        }
+    }
 }

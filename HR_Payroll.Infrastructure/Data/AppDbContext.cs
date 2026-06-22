@@ -29,6 +29,11 @@ namespace HR_Payroll.Infrastructure.Data
         public DbSet<SalaryComponents> SalaryComponents { get; set; }
         public DbSet<sp_UserLogin> sp_UserLogin => Set<sp_UserLogin>();
         public DbSet<Users> Users { get; set; }
+        public DbSet<PayrollRun> PayrollRun { get; set; }
+        public DbSet<PayrollEmployee> PayrollEmployee { get; set; }
+        public DbSet<Payroll> Payroll { get; set; }
+        public DbSet<PaymentBatch> PaymentBatch { get; set; }
+        public DbSet<PaymentBatchEmployee> PaymentBatchEmployee { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

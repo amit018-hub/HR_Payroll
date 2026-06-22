@@ -1,348 +1,449 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Payslip</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #e9eef5, #f7f9fc);
+﻿@model HR_Payroll.Core.DTO.Payroll.SalarySlipDto
+@{
+    ViewData["Title"] = "Salary slip";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var monthName = Model != null ? new System.DateTime(Model.PayrollYear, Model.PayrollMonth, 1).ToString("MMMM yyyy") : "-";
+    var statusLabel = Model?.Status switch
+    {
+        "Paid" => "PAID",
+        "Approved" => "APPROVED",
+        "Draft" => "DRAFT",
+        _ => "NOT CALCULATED"
+    };
+}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    .payslip-page {
+        --ink: #1B1F23;
+        --paper: #F7F5F1;
+        --card: #FFFFFF;
+        --brass: #8A7B5C;
+        --ledger-green: #1E5631;
+        --rule: #C7C1B4;
+        --muted: #6B675F;
+        background: var(--paper);
+        padding: 32px 16px;
+        border-radius: 10px;
+    }
+
+    .payslip-container {
+        position: relative;
+        max-width: 880px;
+        margin: auto;
+        background: var(--card);
+        border: 1px solid var(--rule);
+        padding: 0;
+        overflow: hidden;
+        color: var(--ink);
+        font-family: "Inter", sans-serif;
+    }
+
+    .payslip-band {
+        height: 6px;
+        background: var(--ink);
+    }
+
+    .payslip-inner {
+        padding: 36px 44px 30px;
+    }
+
+    /* Status seal — the signature element. Rotated like a real stamp, color and
+           label driven entirely by the actual payroll Status, not decorative. */
+    .payslip-seal {
+        position: absolute;
+        top: 38px;
+        right: 44px;
+        border: 2.5px solid var(--brass);
+        color: var(--brass);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        padding: 6px 14px;
+        border-radius: 4px;
+        transform: rotate(8deg);
+        opacity: 0.85;
+    }
+
+        .payslip-seal.is-paid {
+            border-color: var(--ledger-green);
+            color: var(--ledger-green);
+        }
+
+        .payslip-seal.is-pending {
+            border-color: var(--muted);
+            color: var(--muted);
+        }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-bottom: 18px;
+        border-bottom: 2px solid var(--ink);
+    }
+
+    .company-details h2 {
+        margin: 0;
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    .company-details p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .payslip-title {
+        text-align: right;
+    }
+
+        .payslip-title .eyebrow {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .payslip-title .period {
+            margin-top: 2px;
+            font-family: "Source Serif 4", Georgia, serif;
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+    /* Employee facts — quiet two-column label/value list, not a boxed table */
+    .fact-grid {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 32px;
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+        padding: 16px 0;
+    }
+
+    .fact-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        font-size: 13px;
+    }
+
+        .fact-row dt {
+            color: var(--muted);
+        }
+
+        .fact-row dd {
             margin: 0;
-            padding: 20px;
-        }
-
-        .payslip-container {
-            position: relative;
-            max-width: 900px;
-            margin: auto;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            padding: 25px 30px;
-            overflow: hidden;
-        }
-
-            /* Watermark */
-            .payslip-container::before {
-                content: "ABC TECHNOLOGIES";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%) rotate(-30deg);
-                font-size: 90px;
-                font-weight: 700;
-                color: rgba(0, 0, 0, 0.05);
-                white-space: nowrap;
-                pointer-events: none;
-            }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #2f80ed;
-        }
-
-        .company-details h2 {
-            margin: 0;
-            font-size: 22px;
-            color: #2f80ed;
-        }
-
-        .company-details p {
-            margin: 2px 0;
-            font-size: 12px;
-            color: #555;
-        }
-
-        .payslip-title {
+            font-weight: 500;
             text-align: right;
         }
 
-            .payslip-title h3 {
-                margin: 0;
-                font-size: 20px;
-                letter-spacing: 1px;
-            }
+    .pending-note {
+        margin-top: 18px;
+        padding: 12px 16px;
+        border: 1px dashed var(--rule);
+        border-radius: 4px;
+        font-size: 13px;
+        color: var(--muted);
+        background: #FBFAF8;
+    }
 
-            .payslip-title p {
-                margin: 4px 0 0;
-                font-size: 12px;
-                color: #555;
-            }
+    /* Earnings / deductions — ledger columns, mono figures, no card chrome */
+    .ledger-section {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 36px;
+    }
 
-        .employee-section {
-            margin-top: 18px;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
+    .ledger-col h4 {
+        margin: 0 0 10px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--ink);
+    }
+
+    .ledger-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 0;
+        font-size: 13.5px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+        .ledger-row .amount {
+            font-family: "IBM Plex Mono", monospace;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
         }
 
-            .employee-section table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 13px;
-            }
-
-            .employee-section td {
-                padding: 10px 12px;
-                border-bottom: 1px solid #eee;
-            }
-
-                .employee-section td.label {
-                    font-weight: 600;
-                    width: 20%;
-                    background: #f4f7fb;
-                    color: #333;
-                }
-
-        .salary-section {
-            margin-top: 18px;
-            display: flex;
-            gap: 18px;
+        .ledger-row.total {
+            border-bottom: none;
+            border-top: 1.5px solid var(--ink);
+            margin-top: 4px;
+            padding-top: 9px;
+            font-weight: 600;
         }
 
-        .salary-box {
-            flex: 1;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-            overflow: hidden;
-        }
+    /* Net pay — the one place color is spent */
+    .net-salary {
+        margin-top: 26px;
+        background: var(--ledger-green);
+        color: #fff;
+        padding: 18px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-radius: 4px;
+    }
 
-            .salary-box h4 {
-                margin: 0;
-                padding: 10px 12px;
-                font-size: 14px;
-                background: linear-gradient(90deg, #2f80ed, #56ccf2);
-                color: #fff;
-            }
-
-            .salary-box table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 13px;
-            }
-
-            .salary-box td {
-                padding: 9px 12px;
-                border-bottom: 1px solid #eee;
-            }
-
-                .salary-box td.amount {
-                    text-align: right;
-                    font-weight: 500;
-                }
-
-        .total-row {
-            font-weight: bold;
-            background: #f9fafc;
-        }
-
-        .net-salary {
-            margin-top: 20px;
-            border-radius: 6px;
-            padding: 14px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 15px;
-            background: linear-gradient(90deg, #27ae60, #6fcf97);
-            color: #fff;
-        }
-
-        .footer {
-            margin-top: 22px;
+        .net-salary .label {
+            font-family: "IBM Plex Mono", monospace;
             font-size: 12px;
-            color: #555;
-            text-align: center;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            opacity: 0.85;
         }
 
-            .footer p {
-                margin: 4px 0;
-            }
+        .net-salary .amount {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 24px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
 
-        @@media print {
-            body {
-                background: #fff;
-                padding: 0;
-            }
+    .footer {
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid var(--rule);
+        font-size: 12px;
+        color: var(--muted);
+    }
 
-            .payslip-container {
-                box-shadow: none;
-                border-radius: 0;
-            }
+        .footer .in-words {
+            color: var(--ink);
+            font-style: italic;
+        }
 
-                .payslip-container::before {
-                    color: rgba(0, 0, 0, 0.08);
-                }
+        .footer p {
+            margin: 4px 0;
+        }
+
+    @@media print {
+        .payslip-page {
+            background: #fff;
+            padding: 0;
+        }
+
+        .payslip-container {
+            border: none;
         }
 
         .action-bar {
-            max-width: 900px;
-            margin: 0 auto 15px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            display: none;
+        }
+    }
+
+    .action-bar {
+        max-width: 880px;
+        margin: 0 auto 14px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+        .action-bar button {
+            border: 1px solid var(--ink, #1B1F23);
+            background: transparent;
+            color: var(--ink, #1B1F23);
+            padding: 8px 18px;
+            border-radius: 4px;
+            font-family: "Inter", sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
         }
 
-            .action-bar button {
-                border: none;
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
+            .action-bar button:hover {
+                background: var(--ink, #1B1F23);
                 color: #fff;
-                background: linear-gradient(90deg, #2f80ed, #56ccf2);
-                box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             }
 
-                .action-bar button:last-child {
-                    background: linear-gradient(90deg, #27ae60, #6fcf97);
+            .action-bar button.primary {
+                background: var(--ink, #1B1F23);
+                color: #fff;
+            }
+
+                .action-bar button.primary:hover {
+                    opacity: 0.85;
+                }
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="float-end">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+                    <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                    <li class="breadcrumb-item active">Pay slip</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Salary slip</h4>
+        </div>
+        <!--end page-title-box-->
+    </div>
+    <!--end col-->
+</div>
+
+<div class="payslip-page">
+    @if (Model == null)
+    {
+        <div class="alert alert-warning mb-0">
+            @(ViewBag.LoadError as string ?? "No salary slip data is available for this employee/month.")
+        </div>
+    }
+    else
+    {
+        <div class="action-bar">
+            <button onclick="window.print()">Print</button>
+            <button class="primary" onclick="downloadPayslip()">Download PDF</button>
+        </div>
+
+        <div class="payslip-container">
+            <div class="payslip-band"></div>
+            <div class="payslip-inner">
+
+                <div class="payslip-seal @(Model.Status == "Paid" ? "is-paid" : Model.Status == "Not Calculated" ? "is-pending" : "")">
+                    @statusLabel
+                </div>
+
+                <!-- Header -->
+                <div class="header">
+                    <div class="company-details">
+                        <h2>DRCTS Technologies Pvt. Ltd.</h2>
+                        <p>Bengaluru, India</p>
+                    </div>
+                    <div class="payslip-title">
+                        <div class="eyebrow">Pay slip</div>
+                        <div class="period">@monthName</div>
+                    </div>
+                </div>
+
+                <!-- Employee Details -->
+                <dl class="fact-grid">
+                    <div class="fact-row">
+                        <dt>Employee name</dt>
+                        <dd>@Model.EmployeeName</dd>
+                    </div>
+                    <div class="fact-row">
+                        <dt>Employee ID</dt>
+                        <dd>@Model.EmployeeCode</dd>
+                    </div>
+                    <div class="fact-row">
+                        <dt>Designation</dt>
+                        <dd>@(Model.Designation ?? "-")</dd>
+                    </div>
+                    <div class="fact-row">
+                        <dt>Department</dt>
+                        <dd>@(Model.DepartmentName ?? "-")</dd>
+                    </div>
+                    <div class="fact-row">
+                        <dt>Date of joining</dt>
+                        <dd>@(Model.JoiningDate?.ToString("dd MMM yyyy") ?? "-")</dd>
+                    </div>
+                    <div class="fact-row">
+                        <dt>Bank account</dt>
+                        <dd>@(Model.MaskedBankAccount ?? "Not on file")</dd>
+                    </div>
+                </dl>
+
+                @if (Model.Status == "Not Calculated")
+                {
+                    <div class="pending-note">
+                        Payroll has not been calculated yet for this employee and month. Figures below are zero until "Calculate Payroll" is run on the Payroll Processing page.
+                    </div>
                 }
 
-                .action-bar button:hover {
-                    opacity: 0.9;
+                <!-- Salary Details -->
+                <div class="ledger-section">
+                    <!-- Earnings -->
+                    <div class="ledger-col">
+                        <h4>Earnings</h4>
+                        @foreach (var line in Model.Earnings)
+                        {
+                            <div class="ledger-row">
+                                <span>@line.ComponentName</span>
+                                <span class="amount">₹@line.Amount.ToString("N0")</span>
+                            </div>
+                        }
+                        <div class="ledger-row total">
+                            <span>Total earnings</span>
+                            <span class="amount">₹@Model.TotalEarnings.ToString("N0")</span>
+                        </div>
+                    </div>
+
+                    <!-- Deductions -->
+                    <div class="ledger-col">
+                        <h4>Deductions</h4>
+                        @foreach (var line in Model.Deductions)
+                        {
+                            <div class="ledger-row">
+                                <span>@line.ComponentName</span>
+                                <span class="amount">₹@line.Amount.ToString("N0")</span>
+                            </div>
+                        }
+                        <div class="ledger-row total">
+                            <span>Total deductions</span>
+                            <span class="amount">₹@Model.TotalDeductions.ToString("N0")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Net Salary -->
+                <div class="net-salary">
+                    <span class="label">Net salary payable</span>
+                    <span class="amount">₹@Model.NetSalary.ToString("N0")</span>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    <p>Amount in words: <span class="in-words">@Model.NetSalaryInWords</span></p>
+                    <p>This is a system-generated payslip and does not require a signature.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <script>
+            function downloadPayslip() {
+                const element = document.querySelector('.payslip-container');
+                const opt = {
+                    margin: 0,
+                    filename: 'Payslip.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                if (window.html2pdf) {
+                    html2pdf().set(opt).from(element).save();
+                } else {
+                    alert('html2pdf library not loaded');
                 }
-
-        @@media print {
-            .action-bar {
-                display: none;
             }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Action Buttons -->
-    <div class="action-bar">
-        <button onclick="window.print()">🖨️ Print</button>
-        <button onclick="downloadPayslip()">⬇️ Download</button>
-    </div>
-
-    <div class="payslip-container">
-
-        <!-- Header -->
-        <div class="header">
-            <div class="company-details">
-                <h2>ABC Technologies Pvt. Ltd.</h2>
-                <p>123, IT Park Road, Bengaluru - 560001</p>
-                <p>Phone: +91 98765 43210</p>
-            </div>
-            <div class="payslip-title">
-                <h3>PAY SLIP</h3>
-                <p>Month: July 2025</p>
-            </div>
-        </div>
-
-        <!-- Employee Details -->
-        <div class="employee-section">
-            <table>
-                <tr>
-                    <td class="label">Employee Name</td>
-                    <td>Amit Pradhan</td>
-                    <td class="label">Employee ID</td>
-                    <td>EMP0012</td>
-                </tr>
-                <tr>
-                    <td class="label">Designation</td>
-                    <td>Software Engineer</td>
-                    <td class="label">Department</td>
-                    <td>IT</td>
-                </tr>
-                <tr>
-                    <td class="label">Date of Joining</td>
-                    <td>01-Jan-2023</td>
-                    <td class="label">Bank A/C</td>
-                    <td>XXXX XXXX 1234</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Salary Details -->
-        <div class="salary-section">
-            <!-- Earnings -->
-            <div class="salary-box">
-                <h4>Earnings</h4>
-                <table>
-                    <tr>
-                        <td>Basic Salary</td>
-                        <td class="amount">₹30,000</td>
-                    </tr>
-                    <tr>
-                        <td>HRA</td>
-                        <td class="amount">₹15,000</td>
-                    </tr>
-                    <tr>
-                        <td>Special Allowance</td>
-                        <td class="amount">₹5,000</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>Total Earnings</td>
-                        <td class="amount">₹50,000</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Deductions -->
-            <div class="salary-box">
-                <h4>Deductions</h4>
-                <table>
-                    <tr>
-                        <td>Provident Fund</td>
-                        <td class="amount">₹3,600</td>
-                    </tr>
-                    <tr>
-                        <td>Professional Tax</td>
-                        <td class="amount">₹200</td>
-                    </tr>
-                    <tr>
-                        <td>Income Tax</td>
-                        <td class="amount">₹1,200</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>Total Deductions</td>
-                        <td class="amount">₹5,000</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- Net Salary -->
-        <div class="net-salary">
-            <span>Net Salary Payable</span>
-            <span>₹45,000</span>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p><strong>Amount in Words:</strong> Forty Five Thousand Rupees Only</p>
-            <p>This is a system generated payslip and does not require signature.</p>
-        </div>
-
-    </div>
-
-
-    <script>
-        function downloadPayslip() {
-            const element = document.querySelector('.payslip-container');
-            const opt = {
-                margin: 0,
-                filename: 'Payslip.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            if (window.html2pdf) {
-                html2pdf().set(opt).from(element).save();
-            } else {
-                alert('html2pdf library not loaded');
-            }
-        }
-    </script>
-</body>
-</html>
+        </script>
+    }
+</div>
