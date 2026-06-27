@@ -35,11 +35,11 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="~/assets/images/favicon.ico">
     <!-- selectr -->
-   <link href="~/assets/libs/mobius1-selectr/selectr.min.css" rel="stylesheet" type="text/css" asp-append-version="true"/>
+    <link href="~/assets/libs/mobius1-selectr/selectr.min.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     <!-- Datatables -->
-   <link href="~/assets/css/datatables.min.css" rel="stylesheet" asp-append-version="true" /> 
-   <link href="~/assets/css/buttons.datatables.min.css" rel="stylesheet" asp-append-version="true" />
-   <link href="~/assets/libs/tabulator-tables/css/tabulator_bootstrap5.min.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="~/assets/css/datatables.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/assets/css/buttons.datatables.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/assets/libs/tabulator-tables/css/tabulator_bootstrap5.min.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     <!-- Calendar -->
     <link href="~/assets/libs/fullcalendar/main.min.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     <!-- App css -->
@@ -62,45 +62,72 @@
             <div class="main-icon-menu-body">
                 <div class="position-reletive h-100" data-simplebar style="overflow-x: hidden;">
                     <ul class="nav nav-tabs" role="tablist" id="tab-menu">
+
                         <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard" data-bs-trigger="hover">
                             <a href="#DrctsDashboard" id="dashboard-tab" class="nav-link">
                                 <i class="ti ti-smart-home menu-icon"></i>
-                            </a><!--end nav-link-->
-                        </li><!--end nav-item-->
+                            </a>
+                        </li>
+
                         @if (userTypeId == 1)
                         {
                             <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Master" data-bs-trigger="hover">
                                 <a href="#DrctsMaster" id="apps-tab" class="nav-link">
                                     <i class="ti ti-apps menu-icon"></i>
-                                </a><!--end nav-link-->
-                            </li> <!--end nav-item-->
+                                </a>
+                            </li>
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendance" data-bs-trigger="hover">
+                                <a href="#DrctsAttendance" id="uikit-tab" class="nav-link">
+                                    <i class="ti ti-files menu-icon"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Payroll" data-bs-trigger="hover">
+                                <a href="#DrctsPayroll" id="pages-tab" class="nav-link">
+                                    <i class="ti ti-shield-lock menu-icon"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Report" data-bs-trigger="hover">
+                                <a href="#MetricaAuthentication" id="authentication-tab" class="nav-link">
+                                    <i class="ti ti-report-analytics menu-icon"></i>
+                                </a>
+                            </li>
+                        }
+                        else if (userTypeId == 2)
+                        {
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendance" data-bs-trigger="hover">
+                                <a href="#DrctsAttendance" id="uikit-tab" class="nav-link">
+                                    <i class="ti ti-files menu-icon"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Payroll" data-bs-trigger="hover">
+                                <a href="#DrctsPayroll" id="pages-tab" class="nav-link">
+                                    <i class="ti ti-shield-lock menu-icon"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Report" data-bs-trigger="hover">
+                                <a href="#MetricaAuthentication" id="authentication-tab" class="nav-link">
+                                    <i class="ti ti-report-analytics menu-icon"></i>
+                                </a>
+                            </li>
                         }
                         else
                         {
                             <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendance" data-bs-trigger="hover">
                                 <a href="#DrctsAttendance" id="uikit-tab" class="nav-link">
                                     <i class="ti ti-files menu-icon"></i>
-                                </a><!--end nav-link-->
-                            </li><!--end nav-item-->
-
+                                </a>
+                            </li>
                             <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Payroll" data-bs-trigger="hover">
                                 <a href="#DrctsPayroll" id="pages-tab" class="nav-link">
                                     <i class="ti ti-shield-lock menu-icon"></i>
-                                </a><!--end nav-link-->
-                            </li><!--end nav-item-->
+                                </a>
+                            </li>
                         }
-                        @if (userTypeId == 1)
-                        {
-                            <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Report" data-bs-trigger="hover">
-                                <a href="#MetricaAuthentication" id="authentication-tab" class="nav-link">
-                                    <i class="ti ti-report-analytics menu-icon"></i>
-                                </a><!--end nav-link-->
-                            </li><!--end nav-item-->
-                        }
+
                     </ul><!--end nav-->
                 </div><!--end /div-->
             </div><!--end main-icon-menu-body-->
-           @*  <div class="pro-metrica-end">
+            @*  <div class="pro-metrica-end">
                 <a href="#" class="profile">
                     <img src="~/assets/images/users/user-4.jpg" alt="profile-user" class="rounded-circle thumb-sm">
                 </a>
@@ -129,12 +156,12 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             @if (userTypeId == 1)
-                            {             
+                            {
                                 <a class="nav-link" asp-action="AdminDashboard" asp-controller="Dashboard">Dashboard Analytics</a>
                             }
                             else
                             {
-                                <a class="nav-link" asp-action="EmployeeDashboard" asp-controller="Dashboard">Dashboard Analytics</a>                       
+                                <a class="nav-link" asp-action="EmployeeDashboard" asp-controller="Dashboard">Dashboard Analytics</a>
                             }
                         </li><!--end nav-item-->
                     </ul><!--end nav-->
@@ -149,7 +176,7 @@
                             <ul class="navbar-nav">
                                 <li class="nav-item">
                                     <a class="nav-link" href="#sidebarAnalytics" data-bs-toggle="collapse" role="button"
-                                    aria-expanded="false" aria-controls="sidebarAnalytics">
+                                       aria-expanded="false" aria-controls="sidebarAnalytics">
                                         Shift & Location Master
                                     </a>
                                     <div class="collapse " id="sidebarAnalytics">
@@ -165,41 +192,141 @@
                                 </li><!--end nav-item-->
                                 <li class="nav-item">
                                     <a class="nav-link" href="#sidebarCrypto" data-bs-toggle="collapse" role="button"
-                                    aria-expanded="false" aria-controls="sidebarCrypto">
+                                       aria-expanded="false" aria-controls="sidebarCrypto">
                                         Assign Department
                                     </a>
                                     <div class="collapse " id="sidebarCrypto">
                                         <ul class="nav flex-column">
                                             <li class="nav-item">
-                                                <a class="nav-link"  asp-action="AssignEmployeeShift" asp-controller="Assign">Assign Employee Shift</a>
+                                                <a class="nav-link" asp-action="AssignEmployeeShift" asp-controller="Assign">Assign Employee Shift</a>
                                             </li><!--end nav-item-->
-                                           @*  <li class="nav-item">
+                                            @*  <li class="nav-item">
                                                 <a class="nav-link"  asp-action="AssignManager" asp-controller="Assign">Assign Manager</a>
                                             </li><!--end nav-item-->
                                             <li class="nav-item">
                                                 <a class="nav-link"  asp-action="AssignTeamLeader" asp-controller="Assign">Assign TeamLeader</a>
                                             </li><!--end nav-item--> *@
                                             <li class="nav-item">
-                                                <a class="nav-link"  asp-action="AssignEmployee" asp-controller="Assign">Assign Employee</a>
-                                            </li><!--end nav-item-->     
-                                             
+                                                <a class="nav-link" asp-action="AssignEmployee" asp-controller="Assign">Assign Employee</a>
+                                            </li><!--end nav-item-->
+
                                         </ul><!--end nav-->
                                     </div><!--end sidebarCrypto-->
                                 </li><!--end nav-item-->
-                            </ul><!--end nav-->                       
+                            </ul><!--end nav-->
                         </div><!--end sidebarCollapse-->
 
-                        <ul class="nav flex-column">                         
+                        <ul class="nav flex-column">
                             <li class="nav-item">
                                 <a class="nav-link" asp-action="EmployeeMaster" asp-controller="Employee">Employee Master</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
-                          <ul class="nav flex-column">                         
+                        <ul class="nav flex-column">
                             <li class="nav-item">
                                 <a class="nav-link" asp-action="EmployeeList" asp-controller="Employee">Employee List</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
-                    </div><!-- end Master -->
+                    </div>
+                
+                    <!-- end Master -->
+
+                    <div id="DrctsAttendance" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="uikit-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Attendance</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calendar</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceData" asp-controller="MarkAttendance">Attendance Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Attendance (Admin) -->
+
+                    <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Payroll</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="PayrollRun" asp-controller="Payroll">Salary Release</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="BankPaymentPage" asp-controller="Payroll">Bank Payment</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="SalarySlip" asp-controller="Payroll">Pay Slip</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Payroll (Admin) -->
+
+                    <div id="MetricaAuthentication" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Report</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Report (Admin) -->
+                }
+                else if (userTypeId == 2)
+                {
+                    <div id="DrctsAttendance" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="uikit-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Attendance</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calendar</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="AttendanceData" asp-controller="MarkAttendance">Attendance Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Attendance (HR) -->
+
+                    <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Payroll</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="PayrollRun" asp-controller="Payroll">Salary Release</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="BankPaymentPage" asp-controller="Payroll">Bank Payment</a>
+                            </li><!--end nav-item-->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="SalarySlip" asp-controller="Payroll">Pay Slip</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Payroll (HR) -->
+
+                    <div id="MetricaAuthentication" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
+                        <div class="title-box">
+                            <h6 class="menu-title">Report</h6>
+                        </div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
+                            </li><!--end nav-item-->
+                        </ul><!--end nav-->
+                    </div>
+                
+                    <!-- end Report (HR) -->
                 }
                 else
                 {
@@ -207,10 +334,9 @@
                         <div class="title-box">
                             <h6 class="menu-title">Attendance</h6>
                         </div>
-
                         <ul class="nav flex-column">
                             <li class="nav-item">
-                                <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calender</a>
+                                <a class="nav-link" asp-action="AttendanceCalender" asp-controller="MarkAttendance">Calendar</a>
                             </li><!--end nav-item-->
                             <li class="nav-item">
                                 <a class="nav-link" asp-action="AttendanceData" asp-controller="MarkAttendance">Attendance Data</a>
@@ -219,26 +345,14 @@
                                 <a class="nav-link" asp-action="ProjectTimesheet" asp-controller="MarkAttendance">Weekly Timesheet</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
-                    </div><!-- end Attendance -->
-                    <div  class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="authentication-tab">
-                        <div class="title-box">
-                            <h6 class="menu-title">Report</h6>
-                        </div>
+                    </div>
+                
+                    <!-- end Attendance (Employee) -->
 
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-action="#" asp-controller="Report">Report Data</a>
-                            </li><!--end nav-item-->
-                        </ul><!--end nav-->
-                    </div><!-- end Report -->
-                }
-                @if (userTypeId != 1)
-                {
                     <div id="DrctsPayroll" class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
                         <div class="title-box">
                             <h6 class="menu-title">Payroll</h6>
                         </div>
-
                         <ul class="nav flex-column">
                             <li class="nav-item">
                                 <a class="nav-link" asp-action="ApplyLeave" asp-controller="Payroll">Leave</a>
@@ -247,27 +361,9 @@
                                 <a class="nav-link" asp-action="SalarySlip" asp-controller="Payroll">Pay Slip</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
-                    </div><!-- end Payroll -->
-                }
-                @if (userTypeId == 2)
-                {
-                    <div  class="main-icon-menu-pane tab-pane" role="tabpanel" aria-labelledby="pages-tab">
-                        <div class="title-box">
-                            <h6 class="menu-title">Payroll</h6>
-                        </div>
-
-                        <ul class="nav flex-column">
-                           
-                            <li class="nav-item">
-                                <a class="nav-link" asp-action="PayrollRun" asp-controller="Payroll">Salary Release</a>
-                            </li><!--end nav-item-->
-                        </ul><!--end nav-->
-                        <ul class="nav flex-column">              
-                            <li class="nav-item">
-                                <a class="nav-link" asp-action="BankPaymentPage" asp-controller="Payroll">Bank Release list</a>
-                            </li><!--end nav-item-->
-                        </ul>
                     </div>
+                
+                    <!-- end Payroll (Employee) -->
                 }
             </div>
             <!--end menu-body-->
@@ -283,7 +379,7 @@
                 <li class="dropdown notification-list">
                     <a class="nav-link dropdown-toggle arrow-none nav-icon" data-bs-toggle="dropdown" href="#" role="button"
                        id="notificationBell" aria-haspopup="false" aria-expanded="false">
-                        <i class="ti ti-clock"></i> 
+                        <i class="ti ti-clock"></i>
                         <!-- wrapper for date & time -->
                         <span class="clock-wrapper">
                             <span id="currentDate"></span>
@@ -294,7 +390,7 @@
 
                     <div class="dropdown-menu dropdown-menu-end dropdown-lg pt-0" id="notificationDropdown">
                         <h6 class="dropdown-item-text font-15 m-0 py-3 border-bottom d-flex justify-content-between align-items-center">
-                          Mark Attendance <span class="badge bg-soft-primary badge-pill"></span>
+                            Mark Attendance <span class="badge bg-soft-primary badge-pill"></span>
                         </h6>
                         <div class="notification-menu" data-simplebar>
                             <!-- item-->
@@ -334,7 +430,7 @@
                                 </div>
                             </div>
                             <!--end-item-->
-                           
+
                         </div>
                         <!-- All-->
                         <a asp-action="AttendanceData" asp-controller="MarkAttendance" class="dropdown-item text-center text-primary">
@@ -359,7 +455,7 @@
                             <div>
                                 <small class="d-none d-md-block font-11" id="urole"></small>
                                 <span class="d-none d-md-block fw-semibold font-12" id="uname">
-                                     <i class="mdi mdi-chevron-down"></i>
+                                    <i class="mdi mdi-chevron-down"></i>
                                 </span>
                             </div>
                         </div>
@@ -402,7 +498,6 @@
                 @RenderBody()
             </div>
             <!-- container -->
-
             <!--Start Rightbar-->
             <!--Start Rightbar/offcanvas-->
             <div class="offcanvas offcanvas-end" tabindex="-1" id="Appearance" aria-labelledby="AppearanceLabel">
@@ -445,13 +540,12 @@
             </div>
             <!--end Rightbar/offcanvas-->
             <!--end Rightbar-->
-
             <!-- Footer Start -->
             <footer class="footer text-center text-sm-start">
                 &copy; <script>
                            document.write(new Date().getFullYear())
                 </script> DRCTS <span class="text-muted d-none d-sm-inline-block float-end">
-                    Crafted with <i class="mdi mdi-heart text-danger"></i> by DRCTS 
+                    Crafted with <i class="mdi mdi-heart text-danger"></i> by DRCTS
                 </span>
             </footer>
             <!-- end Footer -->
@@ -474,64 +568,64 @@
             </div>
         </div>
     </div>
-     <!-- end Toast-wrapper -->
+    <!-- end Toast-wrapper -->
     <!-- ✅ Loader Container -->
     <div class="loader hide">
         <div class="loader-wrapper">
             <span>
-              <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
             </span>
             <div class="base"><span></span></div>
             <div class="face"></div>
             <div class="loadinglogo">Loading...</div>
         </div>
         <div class="longfazers">
-          <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
         </div>
     </div>
 
     <!-- end page-wrapper -->
+    <!-- CORE LIBRARIES (Load First) -->
+    <script src="~/js/jquery-3.6.4.min.js"></script>
 
-  <!-- CORE LIBRARIES (Load First) -->
-<script src="~/js/jquery-3.6.4.min.js"></script>
+    <!-- Bootstrap requires jQuery -->
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-<!-- Bootstrap requires jQuery -->
-<script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- UI Enhancement Libraries -->
-<script src="~/assets/libs/simplebar/simplebar.min.js"></script>
-<script src="~/assets/libs/feather-icons/feather.min.js"></script>
-<script src="~/assets/libs/mobius1-selectr/selectr.min.js"></script>
-<script src="~/assets/js/pages/forms-advanced.js"></script>
+    <!-- UI Enhancement Libraries -->
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/feather-icons/feather.min.js"></script>
+    <script src="~/assets/libs/mobius1-selectr/selectr.min.js"></script>
+    <script src="~/assets/js/pages/forms-advanced.js"></script>
 
-<!-- DATA TABLE LIBRARIES -->
-<script src="~/assets/js/jquery.datatables.min.js"></script>
-<script src="~/assets/libs/tabulator-tables/js/tabulator.min.js"></script><!-- Buttons extension -->
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <!-- DATA TABLE LIBRARIES -->
+    <script src="~/assets/js/jquery.datatables.min.js"></script>
+    <script src="~/assets/libs/tabulator-tables/js/tabulator.min.js"></script><!-- Buttons extension -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 
-<!-- CSV / Excel -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <!-- CSV / Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
-<!-- PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <!-- PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 
-<!-- CALENDAR LIBRARY -->
-<script src="~/assets/libs/fullcalendar/main.min.js"></script>
+    <!-- CALENDAR LIBRARY -->
+    <script src="~/assets/libs/fullcalendar/main.min.js"></script>
 
-<!-- THEME/APP INITIALIZATION (Before page-specific scripts) -->
-<script src="~/assets/js/app.js"></script>
+    <!-- THEME/APP INITIALIZATION (Before page-specific scripts) -->
+    <script src="~/assets/js/app.js"></script>
 
-<!-- Cookie utilities -->
-<script src="~/js/auth/cookie.js"></script>
+    <!-- Cookie utilities -->
+    <script src="~/js/auth/cookie.js"></script>
 
-<!-- Common utilities -->
-<script src="~/assets/js/pages/toast.init.js"></script>
-<script src="~/js/common/default_toaster.js"></script>
+    <!-- Common utilities -->
+    <script src="~/assets/js/pages/toast.init.js"></script>
+    <script src="~/js/common/default_toaster.js"></script>
 
-<!-- Page-specific functionality -->
-<script src="~/js/attendance/markattendance.js"></script>
+    <!-- Page-specific functionality -->
+    <script src="~/js/attendance/markattendance.js"></script>
 
 </body>
 <!--end body-->
