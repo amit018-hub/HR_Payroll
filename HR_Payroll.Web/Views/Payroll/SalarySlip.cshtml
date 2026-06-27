@@ -1,295 +1,382 @@
 ﻿@model HR_Payroll.Core.DTO.Payroll.SalarySlipDto
 @{
-    ViewData["Title"] = "Salary slip";
+    ViewData["Title"] = "Salary Slip";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var monthName = Model != null ? new System.DateTime(Model.PayrollYear, Model.PayrollMonth, 1).ToString("MMMM yyyy") : "-";
-    var statusLabel = Model?.Status switch
-    {
-        "Paid" => "PAID",
-        "Approved" => "APPROVED",
-        "Draft" => "DRAFT",
-        _ => "NOT CALCULATED"
-    };
+    var statusLabel = Model?.Status switch { "Paid" => "PAID", "Approved" => "APPROVED", "Draft" => "DRAFT", _ => "PENDING" };
+    var sealColor = Model?.Status switch { "Paid" => "#3CB371", "Approved" => "#4A90A4", "Draft" => "#B8922A", _ => "#9CA3AF" };
+    var earnings = Model?.Earnings.Where(l => l.Amount != 0).ToList() ?? new();
+    var deductions = Model?.Deductions.Where(l => l.Amount != 0).ToList() ?? new();
+    bool hasDed = deductions.Any();
 }
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-    .payslip-page {
-        --ink: #1B1F23;
-        --paper: #F7F5F1;
-        --card: #FFFFFF;
-        --brass: #8A7B5C;
-        --ledger-green: #1E5631;
-        --rule: #C7C1B4;
-        --muted: #6B675F;
-        background: var(--paper);
-        padding: 32px 16px;
-        border-radius: 10px;
+    .ps-page {
+        background: #ECEEF1;
+        padding: 20px 12px 40px
     }
 
-    .payslip-container {
-        position: relative;
-        max-width: 880px;
-        margin: auto;
-        background: var(--card);
-        border: 1px solid var(--rule);
-        padding: 0;
-        overflow: hidden;
-        color: var(--ink);
-        font-family: "Inter", sans-serif;
-    }
-
-    .payslip-band {
-        height: 6px;
-        background: var(--ink);
-    }
-
-    .payslip-inner {
-        padding: 36px 44px 30px;
-    }
-
-    /* Status seal — the signature element. Rotated like a real stamp, color and
-           label driven entirely by the actual payroll Status, not decorative. */
-    .payslip-seal {
-        position: absolute;
-        top: 38px;
-        right: 44px;
-        border: 2.5px solid var(--brass);
-        color: var(--brass);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 2px;
-        padding: 6px 14px;
-        border-radius: 4px;
-        transform: rotate(8deg);
-        opacity: 0.85;
-    }
-
-        .payslip-seal.is-paid {
-            border-color: var(--ledger-green);
-            color: var(--ledger-green);
-        }
-
-        .payslip-seal.is-pending {
-            border-color: var(--muted);
-            color: var(--muted);
-        }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        padding-bottom: 18px;
-        border-bottom: 2px solid var(--ink);
-    }
-
-    .company-details h2 {
-        margin: 0;
-        font-family: "Source Serif 4", Georgia, serif;
-        font-size: 24px;
-        font-weight: 600;
-        letter-spacing: 0.2px;
-    }
-
-    .company-details p {
-        margin: 4px 0 0;
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    .payslip-title {
-        text-align: right;
-    }
-
-        .payslip-title .eyebrow {
-            font-family: "IBM Plex Mono", monospace;
-            font-size: 11px;
-            letter-spacing: 2px;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-
-        .payslip-title .period {
-            margin-top: 2px;
-            font-family: "Source Serif 4", Georgia, serif;
-            font-size: 19px;
-            font-weight: 600;
-        }
-
-    /* Employee facts — quiet two-column label/value list, not a boxed table */
-    .fact-grid {
-        margin-top: 24px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0 32px;
-        border-top: 1px solid var(--rule);
-        border-bottom: 1px solid var(--rule);
-        padding: 16px 0;
-    }
-
-    .fact-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 5px 0;
-        font-size: 13px;
-    }
-
-        .fact-row dt {
-            color: var(--muted);
-        }
-
-        .fact-row dd {
-            margin: 0;
-            font-weight: 500;
-            text-align: right;
-        }
-
-    .pending-note {
-        margin-top: 18px;
-        padding: 12px 16px;
-        border: 1px dashed var(--rule);
-        border-radius: 4px;
-        font-size: 13px;
-        color: var(--muted);
-        background: #FBFAF8;
-    }
-
-    /* Earnings / deductions — ledger columns, mono figures, no card chrome */
-    .ledger-section {
-        margin-top: 28px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0 36px;
-    }
-
-    .ledger-col h4 {
-        margin: 0 0 10px;
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        color: var(--muted);
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--ink);
-    }
-
-    .ledger-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 7px 0;
-        font-size: 13.5px;
-        border-bottom: 1px solid var(--rule);
-    }
-
-        .ledger-row .amount {
-            font-family: "IBM Plex Mono", monospace;
-            font-variant-numeric: tabular-nums;
-            font-weight: 500;
-        }
-
-        .ledger-row.total {
-            border-bottom: none;
-            border-top: 1.5px solid var(--ink);
-            margin-top: 4px;
-            padding-top: 9px;
-            font-weight: 600;
-        }
-
-    /* Net pay — the one place color is spent */
-    .net-salary {
-        margin-top: 26px;
-        background: var(--ledger-green);
-        color: #fff;
-        padding: 18px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        border-radius: 4px;
-    }
-
-        .net-salary .label {
-            font-family: "IBM Plex Mono", monospace;
-            font-size: 12px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            opacity: 0.85;
-        }
-
-        .net-salary .amount {
-            font-family: "IBM Plex Mono", monospace;
-            font-size: 24px;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-        }
-
-    .footer {
-        margin-top: 22px;
-        padding-top: 16px;
-        border-top: 1px solid var(--rule);
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-        .footer .in-words {
-            color: var(--ink);
-            font-style: italic;
-        }
-
-        .footer p {
-            margin: 4px 0;
-        }
-
-    @@media print {
-        .payslip-page {
-            background: #fff;
-            padding: 0;
-        }
-
-        .payslip-container {
-            border: none;
-        }
-
-        .action-bar {
-            display: none;
-        }
-    }
-
-    .action-bar {
-        max-width: 880px;
-        margin: 0 auto 14px;
+    .ps-actions {
+        max-width: 800px;
+        margin: 0 auto 12px;
         display: flex;
         justify-content: flex-end;
-        gap: 10px;
+        gap: 8px
     }
 
-        .action-bar button {
-            border: 1px solid var(--ink, #1B1F23);
-            background: transparent;
-            color: var(--ink, #1B1F23);
-            padding: 8px 18px;
-            border-radius: 4px;
-            font-family: "Inter", sans-serif;
+        .ps-actions button {
+            font-family: "Inter",sans-serif;
             font-size: 13px;
             font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: all .15s
         }
 
-            .action-bar button:hover {
-                background: var(--ink, #1B1F23);
-                color: #fff;
-            }
+    .ps-btn-o {
+        border: 1.5px solid #0D1B2A;
+        background: transparent;
+        color: #0D1B2A
+    }
 
-            .action-bar button.primary {
-                background: var(--ink, #1B1F23);
-                color: #fff;
-            }
+        .ps-btn-o:hover {
+            background: #0D1B2A;
+            color: #fff
+        }
 
-                .action-bar button.primary:hover {
-                    opacity: 0.85;
-                }
+    .ps-btn-s {
+        border: 1.5px solid #0D1B2A;
+        background: #0D1B2A;
+        color: #fff
+    }
+
+        .ps-btn-s:hover {
+            opacity: .85
+        }
+
+    .ps-card {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 8px 40px rgba(0,0,0,.13)
+    }
+
+    .ps-hero {
+        background: #0D1B2A;
+        padding: 28px 36px 24px;
+        position: relative;
+        overflow: hidden
+    }
+
+    .ps-hero-glow {
+        position: absolute;
+        inset: 0;
+        opacity: .07;
+        background: radial-gradient(circle at 20% 50%,#B8922A,transparent 55%),radial-gradient(circle at 85% 20%,#4A90A4,transparent 45%)
+    }
+
+    .ps-hero-inner {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start
+    }
+
+    .ps-co {
+        display: flex;
+        align-items: center;
+        gap: 14px
+    }
+
+    .ps-mono {
+        width: 50px;
+        height: 50px;
+        background: #B8922A;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Playfair Display",serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0
+    }
+
+    .ps-coname {
+        font-family: "Playfair Display",serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.25
+    }
+
+    .ps-cosub {
+        font-size: 11px;
+        color: rgba(255,255,255,.45);
+        margin-top: 3px
+    }
+
+    .ps-right {
+        text-align: right
+    }
+
+    .ps-tag {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 10px;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.4)
+    }
+
+    .ps-month {
+        font-family: "Playfair Display",serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #fff;
+        margin-top: 2px
+    }
+
+    .ps-seal {
+        display: inline-block;
+        margin-top: 8px;
+        border: 1.5px solid;
+        border-radius: 4px;
+        font-family: "JetBrains Mono",monospace;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 2.5px;
+        padding: 3px 10px;
+        transform: rotate(5deg);
+        text-transform: uppercase
+    }
+
+    .ps-gold {
+        height: 3px;
+        background: linear-gradient(90deg,#B8922A 0%,#E6C96A 50%,#B8922A 100%)
+    }
+
+    .ps-emp {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        border-bottom: 1px solid #E8EBF0
+    }
+
+    .ps-emp2 {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        border-bottom: 2px solid #0D1B2A
+    }
+
+        .ps-emp2 .ps-cell {
+            background: #F8F9FB
+        }
+
+    .ps-cell {
+        padding: 14px 20px;
+        border-right: 1px solid #E8EBF0
+    }
+
+        .ps-cell:last-child {
+            border-right: none
+        }
+
+    .ps-lbl {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #9CA3AF;
+        margin-bottom: 4px
+    }
+
+    .ps-val {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #111827
+    }
+
+        .ps-val.mono {
+            font-family: "JetBrains Mono",monospace;
+            font-size: 12.5px
+        }
+
+    .ps-pending {
+        margin: 16px 24px;
+        padding: 12px 16px;
+        border-left: 3px solid #B8922A;
+        background: #FEFBF3;
+        font-size: 13px;
+        color: #6B7280;
+        border-radius: 0 4px 4px 0
+    }
+
+    .ps-ledger {
+        display: grid;
+        grid-template-columns: @(hasDed ? "1fr 1fr" : "1fr")
+    }
+
+    .ps-lcol {
+        padding: 20px 24px
+    }
+
+        .ps-lcol:first-child {
+            border-right: @(hasDed ? "1px solid #E8EBF0" : "none")
+        }
+
+    .ps-lhead {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #6B7280;
+        padding-bottom: 10px;
+        border-bottom: 1.5px solid #111827;
+        margin-bottom: 4px
+    }
+
+    .ps-lrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #F1F3F7;
+        font-size: 13px;
+        color: #374151
+    }
+
+        .ps-lrow.ear .amt {
+            color: #1A4731;
+            font-weight: 600
+        }
+
+        .ps-lrow.ded .amt {
+            color: #991B1B;
+            font-weight: 600
+        }
+
+        .ps-lrow .amt {
+            font-family: "JetBrains Mono",monospace;
+            font-size: 13px
+        }
+
+    .ps-ltot {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0 4px;
+        border-top: 1.5px solid #111827;
+        margin-top: 4px;
+        font-weight: 700;
+        font-size: 13.5px;
+        color: #111827
+    }
+
+        .ps-ltot .amt {
+            font-family: "JetBrains Mono",monospace;
+            font-weight: 700
+        }
+
+    .ps-net {
+        background: #1A4731;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 30px;
+        position: relative;
+        overflow: hidden
+    }
+
+        .ps-net::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(-48deg,transparent,transparent 9px,rgba(255,255,255,.03) 9px,rgba(255,255,255,.03) 10px)
+        }
+
+    .ps-net-l {
+        position: relative
+    }
+
+    .ps-net-lbl {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 10px;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.55)
+    }
+
+    .ps-net-words {
+        font-size: 11.5px;
+        color: rgba(255,255,255,.5);
+        font-style: italic;
+        margin-top: 4px;
+        max-width: 380px
+    }
+
+    .ps-net-amt {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 34px;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: -1px;
+        position: relative
+    }
+
+    .ps-net-cur {
+        font-size: 20px;
+        font-weight: 500;
+        vertical-align: super;
+        margin-right: 2px
+    }
+
+    .ps-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 28px 16px;
+        background: #F8F9FB;
+        border-top: 1px solid #E8EBF0
+    }
+
+    .ps-foot-sig {
+        font-size: 11px;
+        color: #9CA3AF
+    }
+
+        .ps-foot-sig strong {
+            color: #6B7280;
+            font-weight: 600
+        }
+
+    .ps-foot-stamp {
+        font-family: "JetBrains Mono",monospace;
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        color: #B8922A;
+        text-transform: uppercase
+    }
+
+    @@media print {
+        .ps-page {
+            background: #fff;
+            padding: 0
+        }
+
+        .ps-actions {
+            display: none
+        }
+
+        .ps-card {
+            box-shadow: none;
+            border-radius: 0
+        }
+    }
 </style>
+
 <div class="row">
     <div class="col-sm-12">
         <div class="page-title-box">
@@ -297,152 +384,162 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
                     <li class="breadcrumb-item"><a href="#">Payroll</a></li>
-                    <li class="breadcrumb-item active">Pay slip</li>
+                    <li class="breadcrumb-item active">Pay Slip</li>
                 </ol>
             </div>
-            <h4 class="page-title">Salary slip</h4>
+            <h4 class="page-title">Salary Slip</h4>
         </div>
-        <!--end page-title-box-->
     </div>
-    <!--end col-->
 </div>
 
-<div class="payslip-page">
+<div class="ps-page">
     @if (Model == null)
     {
-        <div class="alert alert-warning mb-0">
-            @(ViewBag.LoadError as string ?? "No salary slip data is available for this employee/month.")
+        <div class="alert alert-warning" style="max-width:800px;margin:0 auto">
+            @(ViewBag.LoadError as string ?? "No salary slip data available for this employee / month.")
         </div>
     }
     else
     {
-        <div class="action-bar">
-            <button onclick="window.print()">Print</button>
-            <button class="primary" onclick="downloadPayslip()">Download PDF</button>
+        <div class="ps-actions">
+            <button class="ps-btn-o" onclick="window.print()">&#128424; Print</button>
+            <button class="ps-btn-s" onclick="downloadPayslip()">&#8659; Download PDF</button>
         </div>
 
-        <div class="payslip-container">
-            <div class="payslip-band"></div>
-            <div class="payslip-inner">
+        <div class="ps-card" id="payslip-root">
 
-                <div class="payslip-seal @(Model.Status == "Paid" ? "is-paid" : Model.Status == "Not Calculated" ? "is-pending" : "")">
-                    @statusLabel
+            <!-- Dark hero -->
+            <div class="ps-hero">
+                <div class="ps-hero-glow"></div>
+                <div class="ps-hero-inner">
+                    <div class="ps-co">
+                        <div class="ps-mono">D</div>
+                        <div>
+                            <div class="ps-coname">DRCTS Technologies Pvt. Ltd.</div>
+                            <div class="ps-cosub">Bengaluru, India &nbsp;·&nbsp; CIN: U72200KA2020PTC123456</div>
+                        </div>
+                    </div>
+                    <div class="ps-right">
+                        <div class="ps-tag">Pay Slip</div>
+                        <div class="ps-month">@monthName</div>
+                        <span class="ps-seal" style="color:@sealColor;border-color:@sealColor">@statusLabel</span>
+                    </div>
+                </div>
+            </div>
+            <div class="ps-gold"></div>
+
+            <!-- Employee — row 1 -->
+            <div class="ps-emp">
+                <div class="ps-cell">
+                    <div class="ps-lbl">Employee Name</div>
+                    <div class="ps-val">@Model.EmployeeName</div>
+                </div>
+                <div class="ps-cell">
+                    <div class="ps-lbl">Employee ID</div>
+                    <div class="ps-val mono">@Model.EmployeeCode</div>
+                </div>
+                <div class="ps-cell">
+                    <div class="ps-lbl">Designation</div>
+                    <div class="ps-val">@(string.IsNullOrWhiteSpace(Model.Designation) || Model.Designation == "-" ? "—" : Model.Designation)</div>
+                </div>
+            </div>
+
+            <!-- Employee — row 2 -->
+            <div class="ps-emp2">
+                <div class="ps-cell">
+                    <div class="ps-lbl">Department</div>
+                    <div class="ps-val">@(Model.DepartmentName ?? "—")</div>
+                </div>
+                <div class="ps-cell">
+                    <div class="ps-lbl">Date of Joining</div>
+                    <div class="ps-val">@(Model.JoiningDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                </div>
+                <div class="ps-cell">
+                    <div class="ps-lbl">Bank Account</div>
+                    <div class="ps-val mono">@(Model.MaskedBankAccount ?? "Not on file")</div>
+                </div>
+            </div>
+
+            @if (Model.Status == "Not Calculated" || Model.Status == "Pending")
+            {
+                <div class="ps-pending">
+                    Payroll not yet calculated for this period. Run <strong>Calculate Payroll</strong> on the Payroll Processing page to populate figures.
+                </div>
+            }
+
+            <!-- Ledger -->
+            <div class="ps-ledger">
+                <!-- Earnings -->
+                <div class="ps-lcol">
+                    <div class="ps-lhead">Earnings</div>
+                    @if (!earnings.Any())
+                    {
+                        <div class="ps-lrow" style="color:#9CA3AF;font-size:13px">No earnings components configured</div>
+                    }
+                    @foreach (var line in earnings)
+                    {
+                        <div class="ps-lrow ear">
+                            <span>@line.ComponentName</span>
+                            <span class="amt">&#8377;@line.Amount.ToString("N0")</span>
+                        </div>
+                    }
+                    <div class="ps-ltot">
+                        <span>Total earnings</span>
+                        <span class="amt">&#8377;@Model.TotalEarnings.ToString("N0")</span>
+                    </div>
                 </div>
 
-                <!-- Header -->
-                <div class="header">
-                    <div class="company-details">
-                        <h2>DRCTS Technologies Pvt. Ltd.</h2>
-                        <p>Bengaluru, India</p>
-                    </div>
-                    <div class="payslip-title">
-                        <div class="eyebrow">Pay slip</div>
-                        <div class="period">@monthName</div>
-                    </div>
-                </div>
-
-                <!-- Employee Details -->
-                <dl class="fact-grid">
-                    <div class="fact-row">
-                        <dt>Employee name</dt>
-                        <dd>@Model.EmployeeName</dd>
-                    </div>
-                    <div class="fact-row">
-                        <dt>Employee ID</dt>
-                        <dd>@Model.EmployeeCode</dd>
-                    </div>
-                    <div class="fact-row">
-                        <dt>Designation</dt>
-                        <dd>@(Model.Designation ?? "-")</dd>
-                    </div>
-                    <div class="fact-row">
-                        <dt>Department</dt>
-                        <dd>@(Model.DepartmentName ?? "-")</dd>
-                    </div>
-                    <div class="fact-row">
-                        <dt>Date of joining</dt>
-                        <dd>@(Model.JoiningDate?.ToString("dd MMM yyyy") ?? "-")</dd>
-                    </div>
-                    <div class="fact-row">
-                        <dt>Bank account</dt>
-                        <dd>@(Model.MaskedBankAccount ?? "Not on file")</dd>
-                    </div>
-                </dl>
-
-                @if (Model.Status == "Not Calculated")
+                @if (hasDed)
                 {
-                    <div class="pending-note">
-                        Payroll has not been calculated yet for this employee and month. Figures below are zero until "Calculate Payroll" is run on the Payroll Processing page.
+                    <!-- Deductions -->
+                    <div class="ps-lcol">
+                        <div class="ps-lhead">Deductions</div>
+                        @foreach (var line in deductions)
+                        {
+                            <div class="ps-lrow ded">
+                                <span>@line.ComponentName</span>
+                                <span class="amt">&#8377;@line.Amount.ToString("N0")</span>
+                            </div>
+                        }
+                        <div class="ps-ltot">
+                            <span>Total deductions</span>
+                            <span class="amt">&#8377;@Model.TotalDeductions.ToString("N0")</span>
+                        </div>
                     </div>
                 }
-
-                <!-- Salary Details -->
-                <div class="ledger-section">
-                    <!-- Earnings -->
-                    <div class="ledger-col">
-                        <h4>Earnings</h4>
-                        @foreach (var line in Model.Earnings)
-                        {
-                            <div class="ledger-row">
-                                <span>@line.ComponentName</span>
-                                <span class="amount">₹@line.Amount.ToString("N0")</span>
-                            </div>
-                        }
-                        <div class="ledger-row total">
-                            <span>Total earnings</span>
-                            <span class="amount">₹@Model.TotalEarnings.ToString("N0")</span>
-                        </div>
-                    </div>
-
-                    <!-- Deductions -->
-                    <div class="ledger-col">
-                        <h4>Deductions</h4>
-                        @foreach (var line in Model.Deductions)
-                        {
-                            <div class="ledger-row">
-                                <span>@line.ComponentName</span>
-                                <span class="amount">₹@line.Amount.ToString("N0")</span>
-                            </div>
-                        }
-                        <div class="ledger-row total">
-                            <span>Total deductions</span>
-                            <span class="amount">₹@Model.TotalDeductions.ToString("N0")</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Net Salary -->
-                <div class="net-salary">
-                    <span class="label">Net salary payable</span>
-                    <span class="amount">₹@Model.NetSalary.ToString("N0")</span>
-                </div>
-
-                <!-- Footer -->
-                <div class="footer">
-                    <p>Amount in words: <span class="in-words">@Model.NetSalaryInWords</span></p>
-                    <p>This is a system-generated payslip and does not require a signature.</p>
-                </div>
-
             </div>
+
+            <!-- Net pay -->
+            <div class="ps-net">
+                <div class="ps-net-l">
+                    <div class="ps-net-lbl">Net Salary Payable</div>
+                    <div class="ps-net-words">@Model.NetSalaryInWords</div>
+                </div>
+                <div class="ps-net-amt">
+                    <span class="ps-net-cur">&#8377;</span>@Model.NetSalary.ToString("N0")
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="ps-foot">
+                <div class="ps-foot-sig">
+                    Authorised signatory &nbsp;·&nbsp; <strong>DRCTS Technologies Pvt. Ltd.</strong>
+                </div>
+                <div class="ps-foot-stamp">System Generated · No Signature Required</div>
+            </div>
+
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script>
             function downloadPayslip() {
-                const element = document.querySelector('.payslip-container');
-                const opt = {
-                    margin: 0,
-                    filename: 'Payslip.pdf',
+                html2pdf().set({
+                    margin: 6,
+                    filename: 'Payslip_@(Model.EmployeeCode)_@(monthName.Replace(" ", "_")).pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
+                    html2canvas: { scale: 2, useCORS: true },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-
-                if (window.html2pdf) {
-                    html2pdf().set(opt).from(element).save();
-                } else {
-                    alert('html2pdf library not loaded');
-                }
+                }).from(document.getElementById('payslip-root')).save();
             }
         </script>
     }

@@ -259,9 +259,14 @@
                         <ul class="nav flex-column">
                            
                             <li class="nav-item">
-                                <a class="nav-link" asp-action="#" asp-controller="Payroll">Salary Release</a>
+                                <a class="nav-link" asp-action="PayrollRun" asp-controller="Payroll">Salary Release</a>
                             </li><!--end nav-item-->
                         </ul><!--end nav-->
+                        <ul class="nav flex-column">              
+                            <li class="nav-item">
+                                <a class="nav-link" asp-action="BankPaymentPage" asp-controller="Payroll">Bank Release list</a>
+                            </li><!--end nav-item-->
+                        </ul>
                     </div>
                 }
             </div>
@@ -492,7 +497,6 @@
 
 <!-- Bootstrap requires jQuery -->
 <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
-
 <!-- UI Enhancement Libraries -->
 <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
 <script src="~/assets/libs/feather-icons/feather.min.js"></script>

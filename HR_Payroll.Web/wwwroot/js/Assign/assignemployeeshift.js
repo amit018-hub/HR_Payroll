@@ -538,11 +538,34 @@ function loadAssignListTable() {
         $('#assignListTable').DataTable().destroy();
     }
 
+    function formatDate(d) {
+        if (!d) return '';
+
+        try {
+            const fixed = d.replace(' ', 'T'); // fix SQL format
+            const date = new Date(fixed);
+
+            if (isNaN(date.getTime())) return 'Invalid Date';
+
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+
+        } catch (e) {
+            return 'Invalid Date';
+        }
+    }
+
     $('#assignListTable').DataTable({
         processing: true,
         ajax: {
             url: '/Assign/GetAssignedShiftList',
-            type: 'GET'
+            type: 'GET',
+            dataSrc: function (json) {
+                return json.data || [];
+            }
         },
         columns: [
             {
@@ -550,32 +573,60 @@ function loadAssignListTable() {
                 render: function (d) {
                     return `
                         <div>
-                            <strong>${d.employeeName}</strong><br/>
-                            <small class="text-muted">${d.employeeCode}</small>
+                            <strong>${d.employeeName || ''}</strong><br/>
+                            <small class="text-muted">${d.employeeCode || ''}</small>
                         </div>`;
                 }
             },
-            { data: 'officeName' },
-            { data: 'shiftName' },
+            { data: 'officeName', defaultContent: '' },
+            { data: 'shiftName', defaultContent: '' },
+
             {
                 data: 'effectiveFrom',
-                render: d => moment(d).format('DD-MMM-YYYY')
+                render: function (d) {
+                    return formatDate(d);
+                }
             },
+
             {
                 data: 'effectiveTo',
-                render: d => d ? moment(d).format('DD-MMM-YYYY') : '<span class="text-muted">Open</span>'
+                render: function (d) {
+                    return d
+                        ? formatDate(d)
+                        : '<span class="text-muted">NA</span>';
+                }
             },
+
             {
-                data: 'isActive',
-                render: d =>
-                    d
-                        ? '<span class="badge bg-success">Active</span>'
-                        : '<span class="badge bg-secondary">Expired</span>'
+                data: null,
+                render: function (d) {
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const from = d.effectiveFrom
+                        ? new Date(d.effectiveFrom.replace(' ', 'T'))
+                        : null;
+
+                    const to = d.effectiveTo
+                        ? new Date(d.effectiveTo.replace(' ', 'T'))
+                        : null;
+
+                    if (from) from.setHours(0, 0, 0, 0);
+                    if (to) to.setHours(0, 0, 0, 0);
+
+                    if (from && today < from) {
+                        return '<span class="badge bg-warning text-dark">Upcoming</span>';
+                    }
+
+                    if (from && (!to || today <= to)) {
+                        return '<span class="badge bg-success">Active</span>';
+                    }
+
+                    return '<span class="badge bg-danger">Expired</span>';
+                }
             }
         ]
     });
 }
-
-
-
 

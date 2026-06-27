@@ -139,8 +139,7 @@ namespace HR_Payroll.Web.Controllers
                     string redirectUrl;
 
                     // 🔐 ROLE BASED ROUTING
-                    if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
-                        || role.Equals("HR", StringComparison.OrdinalIgnoreCase))
+                    if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                     {
                         redirectUrl = Url.Action("AdminDashboard", "Dashboard");
                     }

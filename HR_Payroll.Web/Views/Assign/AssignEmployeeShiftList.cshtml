@@ -1,5 +1,44 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    Layout = null; // important for partial view
 }
+
+<div class="table-responsive">
+    <table id="assignListTable" class="table table-bordered table-hover align-middle w-100">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 25%;">Employee</th>
+                <th style="width: 20%;">Office</th>
+                <th style="width: 20%;">Shift</th>
+                <th style="width: 15%;">From Date</th>
+                <th style="width: 15%;">To Date</th>
+                <th style="width: 10%;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- DataTables will populate -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Optional: No Data UI (fallback if DataTables fails) -->
+<div id="noDataMessage" class="text-center text-muted py-4" style="display:none;">
+    No shift assignments found.
+</div>
+
+<script>
+    // ✅ Optional safety: show message if no records
+    $(document).ajaxComplete(function (event, xhr, settings) {
+        if (settings.url.includes('GetAssignedShiftList')) {
+            try {
+                const response = xhr.responseJSON;
+                if (!response || !response.data || response.data.length === 0) {
+                    $('#assignListTable').hide();
+                    $('#noDataMessage').show();
+                }
+            } catch (e) {
+                console.warn("Error checking empty data", e);
+            }
+        }
+    });
+</script>
+`

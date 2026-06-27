@@ -415,7 +415,7 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
-        public IActionResult AssignEmployeeShiftList() => PartialView("AssignEmployeeShiftList.cshtml");
+        public IActionResult AssignEmployeeShiftList() => PartialView("~/Views/Assign/AssignEmployeeShiftList.cshtml");
 
         public async Task<IActionResult> GetAssignedShiftList()
         {
