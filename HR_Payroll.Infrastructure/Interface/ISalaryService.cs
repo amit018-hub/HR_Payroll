@@ -1,5 +1,6 @@
 ﻿using HR_Payroll.Core.DTO.Payroll;
 using HR_Payroll.Core.Entity;
+using HR_Payroll.Core.Model.Payroll;
 using HR_Payroll.Infrastructure.Concrete;
 using HR_Payroll.Infrastructure.Data;
 using Microsoft.Extensions.Logging;
@@ -26,5 +27,9 @@ namespace HR_Payroll.Infrastructure.Interface
         // Bank Payment — uses PayrollRun + PayrollEmployee + EmployeeBank
         Task<BankPaymentSummaryDto> GetBankPaymentSummaryAsync(string payrollMonth);
         Task<bool> MarkPaymentDoneAsync(string payrollMonth, List<int> employeeIds, int modifiedByUserId);
+
+        // Deduction Entry Page — writes directly to EmployeeSalaryComponent
+        Task<List<DeductionPageRowDto>> GetDeductionPageDataAsync(int? departmentId);
+        Task<bool> SaveDeductionComponentsAsync(SaveDeductionComponentsRequest request);
     }
 }

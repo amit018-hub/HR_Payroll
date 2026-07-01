@@ -8,6 +8,12 @@ namespace HR_Payroll.Web.Controllers
         {
             return View();
         }
-       
+
+        // New Master Pages
+        public IActionResult DesinationMaster()
+        {
+            return View();
+        }
+
     }
 }

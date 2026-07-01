@@ -18,6 +18,7 @@ namespace HR_Payroll.Core.Entity
         public decimal? Percentage { get; set; }
         public string? PerOnComponentName { get; set; }
         public int? PerOnComponentID { get; set; }
+        public bool? Mandatory { get; set; }
         public string? Del_Flg { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; }

@@ -123,6 +123,24 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> LoadDepartments()
+        {
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.GetAsync<List<DepartmentDTO>>("Department/GetAllDepartments");
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+                return Json(new { status = true, result = new { data = result.data } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in LoadDepartments");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
         public IActionResult ApplyLeave() => View();
 
         [HttpPost]
@@ -365,6 +383,8 @@ namespace HR_Payroll.Web.Controllers
 
         public IActionResult BankPaymentPage() => View();
 
+        public IActionResult DeductionEntry() => View();
+
         public async Task<IActionResult> SalarySlip(int? employeeId, string? month)
         {
             int resolvedEmployeeId = employeeId ?? 0;
@@ -502,6 +522,56 @@ namespace HR_Payroll.Web.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> LoadDeductionPageData(int? departmentId)
+        {
+            try
+            {
+                SetTokens();
+                var qp = new Dictionary<string, string>();
+                if (departmentId.HasValue && departmentId.Value > 0)
+                    qp["departmentId"] = departmentId.Value.ToString();
+
+                var result = await _apiClient.GetAsync<List<DeductionPageRowDto>>(
+                    "Salary/GetDeductionPageData", qp);
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, data = result.data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in LoadDeductionPageData");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveDeductionComponents([FromBody] SaveDeductionComponentsRequest req)
+        {
+            if (req == null || req.EmployeeId <= 0
+                || req.Items == null || !req.Items.Any())
+                return BadRequest(new { status = false, message = "Invalid payload." });
+
+            try
+            {
+                SetTokens();
+                var result = await _apiClient.PostAsync<object>(
+                    "Salary/SaveDeductionComponents", req);
+
+                if (!result.status)
+                    return StatusCode(500, new { status = false, message = result.message });
+
+                return Json(new { status = true, message = "Saved." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in SaveDeductionComponents");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
         // ---------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------
@@ -524,5 +594,6 @@ namespace HR_Payroll.Web.Controllers
             var now = DateTime.UtcNow;
             return (now.Month, now.Year);
         }
+
     }
 }

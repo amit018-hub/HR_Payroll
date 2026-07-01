@@ -1,6 +1,7 @@
 ﻿using HR_Payroll.CommonCases.Utility;
 using HR_Payroll.Core.DTO.Payroll;
 using HR_Payroll.Core.Entity;
+using HR_Payroll.Core.Model.Payroll;
 using HR_Payroll.Infrastructure.Data;
 using HR_Payroll.Infrastructure.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -120,7 +121,6 @@ namespace HR_Payroll.Infrastructure.Concrete
             }
         }
 
-        // Payroll Run — uses real PayrollRun + PayrollEmployee tables
         public async Task<List<PayrollRunRowDto>> GetPayrollRunRowsAsync(string payrollMonth, int? departmentId)
         {
             try
@@ -402,7 +402,6 @@ namespace HR_Payroll.Infrastructure.Concrete
             }
         }
 
-        // Salary Slip — reads from Payroll table + EmployeeSalaryComponent
         public async Task<SalarySlipDto?> GetSalarySlipAsync(int employeeId, int payrollMonth, int payrollYear)
         {
             try
@@ -522,10 +521,6 @@ namespace HR_Payroll.Infrastructure.Concrete
                 return null;
             }
         }
-
-        // ---------------------------------------------------------------
-        // Bank Payment — uses PayrollRun + PayrollEmployee + EmployeeBank
-        // ---------------------------------------------------------------
 
         public async Task<BankPaymentSummaryDto> GetBankPaymentSummaryAsync(string payrollMonth)
         {
@@ -649,6 +644,193 @@ namespace HR_Payroll.Infrastructure.Concrete
             if (string.IsNullOrWhiteSpace(accountNo) || accountNo.Length <= 4)
                 return accountNo;
             return new string('X', accountNo.Length - 4) + accountNo[^4..];
+        }
+
+        public async Task<List<DeductionPageRowDto>> GetDeductionPageDataAsync(int? departmentId)
+        {
+            try
+            {
+                var today = DateTime.Today;
+
+                // 1. All active employees
+                var empQuery = from e in _context.Employees.AsNoTracking()
+                    where e.Del_Flg != "Y" && e.IsActive
+                    join d in _context.Departments.AsNoTracking()
+                        on e.DepartmentId equals d.DepartmentId into dj
+                    from d in dj.DefaultIfEmpty()
+                    select new
+                    {
+                        e.EmployeeID,
+                        e.EmployeeCode,
+                        e.FirstName,
+                        e.LastName,
+                        e.DepartmentId,
+                        DepartmentName = d != null ? d.DepartmentName : null
+                    };
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                    empQuery = empQuery.Where(x => x.DepartmentId == departmentId.Value);
+
+                var employees = await empQuery
+                    .OrderBy(e => e.FirstName).ThenBy(e => e.LastName)
+                    .ToListAsync();
+
+                if (!employees.Any()) return new();
+
+                var empIds = employees.Select(e => e.EmployeeID).ToList();
+
+                // 2. All salary components — both Earning and Deduction types
+                var allSalaryComponents = await _context.SalaryComponents.AsNoTracking()
+                    .Where(sc => sc.Del_Flg != "Y")
+                    .OrderBy(sc => sc.ComponentType)
+                    .ThenBy(sc => sc.ComponentName)
+                    .ToListAsync();
+
+                var deductionComponents = allSalaryComponents
+                    .Where(sc => string.Equals(sc.ComponentType, "Deduction",
+                                     StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                var earningComponents = allSalaryComponents
+                    .Where(sc => string.Equals(sc.ComponentType, "Earning",
+                                     StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                // 3. Current EmployeeSalaryComponent rows for all employees
+                //    Using <= today and (EffectiveTo null OR >= today) to get active rows
+                //    Also include rows with EffectiveFrom = 0001-01-01 (legacy bad-date data)
+                var empComponents = await _context.EmployeeSalaryComponent.AsNoTracking()
+                    .Where(c => empIds.Contains(c.EmployeeID)
+                                && (c.IsActive == 1 || c.IsActive == null)
+                                && c.Del_Flg != "Y"
+                                && (c.EffectiveTo == null || c.EffectiveTo >= today))
+                    .ToListAsync();
+
+                // Group: empId → componentId → amount
+                var empCompLookup = empComponents
+                    .GroupBy(c => c.EmployeeID)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.GroupBy(c => c.ComponentID)
+                              .ToDictionary(
+                                  cg => cg.Key,
+                                  cg => cg.OrderByDescending(c => c.EffectiveFrom).First()
+                              )
+                    );
+
+                // 4. Build rows
+                var rows = employees.Select(e =>
+                {
+                    empCompLookup.TryGetValue(e.EmployeeID, out var compMap);
+                    compMap ??= new Dictionary<int, EmployeeSalaryComponent>();
+
+                    // Gross = sum of earning components
+                    var gross = earningComponents
+                        .Where(sc => compMap.ContainsKey(sc.ComponentID))
+                        .Sum(sc => compMap[sc.ComponentID].Amount);
+
+                    // Deductions with their current amounts
+                    var dedRows = deductionComponents.Select(sc =>
+                    {
+                        compMap.TryGetValue(sc.ComponentID, out var empComp);
+                        return new DeductionComponentRowDto
+                        {
+                            ComponentId = sc.ComponentID,
+                            ComponentName = sc.ComponentName,
+                            ComponentType = sc.ComponentType,
+                            Percentage = sc.Percentage,
+                            PerOnComponentName = sc.PerOnComponentName,
+                            IsMandatory = sc.Mandatory == true,
+                            CurrentAmount = empComp?.Amount,
+                            IsConfigured = empComp != null
+                        };
+                    }).ToList();
+
+                    var totalDed = dedRows.Sum(d => d.CurrentAmount ?? 0);
+
+                    return new DeductionPageRowDto
+                    {
+                        EmployeeId = e.EmployeeID,
+                        EmployeeCode = e.EmployeeCode,
+                        EmployeeName = $"{e.FirstName} {e.LastName}".Trim(),
+                        DepartmentName = e.DepartmentName,
+                        GrossEarnings = gross,
+                        TotalDeductions = totalDed,
+                        DeductionComponents = dedRows
+                    };
+                }).ToList();
+
+                return rows;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading deduction page data");
+                return new();
+            }
+        }
+
+        public async Task<bool> SaveDeductionComponentsAsync(SaveDeductionComponentsRequest request)
+        {
+            try
+            {
+                if (request == null || request.EmployeeId <= 0
+                    || request.Items == null || !request.Items.Any())
+                    return false;
+
+                var now = DateTime.UtcNow;
+                var today = DateTime.Today;
+                var compIds = request.Items.Select(i => i.ComponentId).ToList();
+
+                // Load existing active rows for this employee+components
+                var existing = await _context.EmployeeSalaryComponent
+                    .Where(c => c.EmployeeID == request.EmployeeId
+                                && compIds.Contains(c.ComponentID)
+                                && (c.IsActive == 1 || c.IsActive == null)
+                                && c.Del_Flg != "Y")
+                    .ToListAsync();
+
+                var existingByComp = existing
+                    .GroupBy(c => c.ComponentID)
+                    .ToDictionary(g => g.Key,
+                                  g => g.OrderByDescending(c => c.EffectiveFrom).First());
+
+                foreach (var item in request.Items)
+                {
+                    if (existingByComp.TryGetValue(item.ComponentId, out var row))
+                    {
+                        // Update amount on the existing row directly (no new effective date)
+                        row.Amount = item.Amount;
+                        row.ModifiedDate = now;
+                        row.ModifiedBy = request.UpdatedBy;
+                    }
+                    else
+                    {
+                        // Insert new row with today as EffectiveFrom
+                        _context.EmployeeSalaryComponent.Add(new EmployeeSalaryComponent
+                        {
+                            EmployeeID = request.EmployeeId,
+                            ComponentID = item.ComponentId,
+                            Amount = item.Amount,
+                            EffectiveFrom = today,
+                            EffectiveTo = null,
+                            IsActive = 1,
+                            Del_Flg = "N",
+                            CreatedDate = now,
+                            CreatedBy = request.UpdatedBy ?? "HR",
+                            ModifiedBy = request.UpdatedBy ?? "HR"
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving deduction components for employee {Id}",
+                    request?.EmployeeId);
+                return false;
+            }
         }
     }
 }

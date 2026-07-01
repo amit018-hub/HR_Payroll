@@ -262,5 +262,47 @@ namespace HR_Payroll.API.Controllers
                 return StatusCode(500, new { status = false, message = "An error occurred." });
             }
         }
+
+        [HttpGet("GetDeductionPageData")]
+        [Authorize(Roles = "Admin,HR")]
+        public async Task<IActionResult> GetDeductionPageData([FromQuery] int? departmentId)
+        {
+            try
+            {
+                var rows = await _salaryService.GetDeductionPageDataAsync(departmentId);
+                return Ok(new { status = true, message = "OK", data = rows });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading deduction page data");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
+
+        [HttpPost("SaveDeductionComponents")]
+        [Authorize(Roles = "Admin,HR")]
+        public async Task<IActionResult> SaveDeductionComponents([FromBody] SaveDeductionComponentsRequest request)
+        {
+            if (request == null || request.EmployeeId <= 0
+                || request.Items == null || !request.Items.Any())
+                return BadRequest(new { status = false, message = "Invalid payload." });
+
+            try
+            {
+                request.UpdatedBy = User.Claims
+                    .FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? "HR";
+
+                var ok = await _salaryService.SaveDeductionComponentsAsync(request);
+                if (!ok)
+                    return StatusCode(500, new { status = false, message = "Failed to save." });
+
+                return Ok(new { status = true, message = "Deduction components saved." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving deduction components");
+                return StatusCode(500, new { status = false, message = "An error occurred." });
+            }
+        }
     }
 }

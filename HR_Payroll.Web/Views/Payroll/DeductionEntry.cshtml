@@ -1,0 +1,260 @@
+@{
+    ViewData["Title"] = "Deduction Entry";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --navy:   #0D1B2A;
+    --forest: #1A4731;
+    --gold:   #B8922A;
+    --smoke:  #F4F6F8;
+    --card:   #FFFFFF;
+    --rule:   #E8EBF0;
+    --muted:  #6B7280;
+    --text:   #1F2937;
+    --red:    #DC2626;
+    --green:  #059669;
+}
+body { font-family: "Inter", sans-serif; }
+
+/* ── Header tally bar ─────────────────────────────────── */
+.ded-header {
+    background: var(--navy);
+    border-radius: 8px;
+    padding: 18px 28px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+}
+.ded-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(-48deg, transparent, transparent 9px,
+        rgba(255,255,255,.025) 9px, rgba(255,255,255,.025) 10px);
+}
+.ded-header-inner {
+    position: relative;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.ded-header h4 { color: #fff; margin: 0; font-size: 16px; font-weight: 600; }
+.ded-header .sub { color: rgba(255,255,255,.45); font-size: 11.5px; margin-top: 2px; }
+.tally-grid { display: flex; gap: 36px; }
+.tally-item { text-align: right; }
+.tally-lbl {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+}
+.tally-val {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 19px; font-weight: 600; color: #fff; margin-top: 2px;
+}
+.tally-val.t-red   { color: #FCA5A5; }
+.tally-val.t-green { color: #6EE7B7; }
+.tally-val.t-gold  { color: #FCD34D; }
+
+/* ── Filter bar ─────────────────────────────────────────── */
+.filter-bar {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+}
+.filter-bar label { font-size: 11.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px; }
+
+/* ── Main table ─────────────────────────────────────────── */
+.ded-table-wrap {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.ded-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ded-table thead th {
+    background: var(--navy); color: #fff;
+    padding: 10px 14px; font-size: 12px; font-weight: 600;
+    letter-spacing: .3px; white-space: nowrap; text-align: left;
+}
+.ded-table thead th.text-end { text-align: right; }
+.ded-table tbody tr { border-bottom: 1px solid var(--rule); }
+.ded-table tbody tr:last-child { border-bottom: none; }
+.ded-table tbody tr:hover { background: #F8F9FB; }
+.ded-table td { padding: 9px 14px; vertical-align: middle; }
+
+.mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+.c-red   { color: var(--red);   font-weight: 600; }
+.c-green { color: var(--green); font-weight: 600; }
+.c-navy  { color: var(--navy);  font-weight: 700; }
+.c-muted { color: var(--muted); font-size: 12px; }
+
+/* Expand arrow button */
+.btn-exp {
+    background: none; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 3px 9px; font-size: 12px;
+    cursor: pointer; color: var(--navy); transition: all .15s;
+}
+.btn-exp:hover, .btn-exp.open { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* Expanded deduction form row */
+.exp-row { display: none; }
+.exp-row.open { display: table-row; }
+.exp-inner {
+    padding: 18px 24px;
+    background: #F8FAFF;
+    border-bottom: 2px solid var(--gold);
+}
+.exp-inner h6 {
+    font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+}
+
+/* Deduction component grid */
+.comp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.comp-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+.comp-card.mandatory { border-left: 3px solid var(--gold); }
+.comp-card.has-value { border-left: 3px solid var(--green); }
+.comp-name { font-size: 12.5px; font-weight: 600; color: var(--navy); }
+.comp-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.comp-input-wrap { display: flex; align-items: center; margin-top: 7px; gap: 6px; }
+.comp-input-wrap .prefix {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+}
+.comp-input {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 500;
+    border: 1px solid var(--rule); border-radius: 5px;
+    padding: 5px 8px; width: 100%; color: var(--navy);
+}
+.comp-input:focus { outline: 2px solid var(--navy); border-color: transparent; }
+
+.btn-save-row {
+    background: var(--forest); color: #fff;
+    border: none; border-radius: 6px;
+    padding: 8px 22px; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+}
+.btn-save-row:hover { opacity: .88; }
+.btn-save-row:disabled { opacity: .5; cursor: default; }
+
+/* Status badge */
+.s-badge {
+    display: inline-block; border-radius: 4px;
+    font-size: 10.5px; font-weight: 600; padding: 2px 8px;
+}
+.s-full    { background: #D1FAE5; color: #065F46; }
+.s-partial { background: #FEF3C7; color: #92400E; }
+.s-none    { background: #F3F4F6; color: #6B7280; }
+
+/* Empty state */
+.empty-state { padding: 44px; text-align: center; color: var(--muted); }
+.empty-state .icon { font-size: 34px; margin-bottom: 10px; }
+</style>
+
+<div class="row">
+  <div class="col-sm-12">
+    <div class="page-title-box">
+      <div class="float-end">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="#">DRCTS</a></li>
+          <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+          <li class="breadcrumb-item active">Deduction Entry</li>
+        </ol>
+      </div>
+      <h4 class="page-title">Deduction Entry</h4>
+    </div>
+  </div>
+</div>
+
+<!-- Live tally header -->
+<div class="ded-header">
+  <div class="ded-header-inner">
+    <div>
+      <h4>Deduction Ledger</h4>
+      <div class="sub">Update deduction components directly on each employee's salary structure</div>
+    </div>
+    <div class="tally-grid">
+      <div class="tally-item">
+        <div class="tally-lbl">Employees</div>
+        <div class="tally-val t-gold" id="tallyEmployees">—</div>
+      </div>
+      <div class="tally-item">
+        <div class="tally-lbl">Configured</div>
+        <div class="tally-val" id="tallyConfigured">—</div>
+      </div>
+      <div class="tally-item">
+        <div class="tally-lbl">Total Deductions</div>
+        <div class="tally-val t-red" id="tallyTotalDed">—</div>
+      </div>
+      <div class="tally-item">
+        <div class="tally-lbl">Total Net Pay</div>
+        <div class="tally-val t-green" id="tallyNetPay">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <div>
+    <label>Department</label>
+    <select id="dedDept" class="form-select form-select-sm" style="width:180px">
+      <option value="">All</option>
+    </select>
+  </div>
+  <button id="btnLoadDed" class="btn btn-primary btn-sm">Load Employees</button>
+  <div class="ms-auto d-flex align-items-end gap-2">
+    <div>
+      <label>Search</label>
+      <input type="text" id="dedSearch" class="form-control form-control-sm"
+             placeholder="Name or code…" style="width:200px" />
+    </div>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="ded-table-wrap">
+  <div class="table-responsive">
+    <table class="ded-table" id="dedTable">
+      <thead>
+        <tr>
+          <th style="width:36px"></th>
+          <th>Emp Code</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th class="text-end">Gross</th>
+          <th class="text-end">Total Deductions</th>
+          <th class="text-end">Net Pay</th>
+          <th>Status</th>
+          <th style="width:80px"></th>
+        </tr>
+      </thead>
+      <tbody id="dedBody">
+        <tr>
+          <td colspan="9">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div>Click <strong>Load Employees</strong> to begin</div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="~/js/jquery-3.6.4.min.js"></script>
+<script src="~/js/payroll/deduction.js"></script>
